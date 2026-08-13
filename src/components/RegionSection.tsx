@@ -1,11 +1,17 @@
-import type { PortalRegion } from '../data/portal'
+import type { ReactNode } from 'react'
+import type { PortalRegion, PortalCard } from '../data/portal'
 import PortalCardItem from './PortalCardItem'
 
 interface RegionSectionProps {
   region: PortalRegion
+  children?: ReactNode
 }
 
-export default function RegionSection({ region }: RegionSectionProps) {
+export default function RegionSection({ region, children }: RegionSectionProps) {
+  const cardCount = children
+    ? (Array.isArray(children) ? (children as unknown[]).length : 1)
+    : region.cards.length
+
   return (
     <section id={`region-${region.id}`} className="scroll-mt-16">
       <div className="flex items-center justify-between mb-2.5">
@@ -21,13 +27,13 @@ export default function RegionSection({ region }: RegionSectionProps) {
               className="px-1.5 py-0.5 text-[10px] font-semibold rounded"
               style={{ backgroundColor: 'var(--t-border-sub)', color: 'var(--t-text-mute)' }}
             >
-              {region.cards.length}
+              {cardCount}
             </span>
           </div>
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-        {region.cards.map(card => (
+        {children ?? region.cards.map((card: PortalCard) => (
           <PortalCardItem key={card.id} card={card} />
         ))}
       </div>

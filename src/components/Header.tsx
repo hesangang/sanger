@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { AccentKey, Mode } from '../App'
 
+export type ViewMode = 'overview' | 'favorites'
+
 interface HeaderProps {
   search: string
   setSearch: (v: string) => void
@@ -10,6 +12,9 @@ interface HeaderProps {
   onToggleMode: () => void
   accent: AccentKey
   onChangeAccent: (a: AccentKey) => void
+  view: ViewMode
+  onViewChange: (v: ViewMode) => void
+  favoriteCount: number
 }
 
 const ACCENTS: { key: AccentKey; label: string; swatch: string }[] = [
@@ -23,6 +28,7 @@ const ACCENTS: { key: AccentKey; label: string; swatch: string }[] = [
 export default function Header({
   search, setSearch, onRegionClick, regionIds,
   mode, onToggleMode, accent, onChangeAccent,
+  view, onViewChange, favoriteCount,
 }: HeaderProps) {
   const [activeAnchor, setActiveAnchor] = useState<string>('')
   const [showAccents, setShowAccents] = useState(false)
@@ -58,7 +64,8 @@ export default function Header({
 
           <nav className="hidden md:flex items-center gap-0.5 overflow-x-auto flex-1 max-w-xl scrollbar-hide">
             {[
-              { id: 'all', name: '总览', icon: '🏠' },
+              { id: 'overview', name: '总览', icon: '🏠', type: 'view' as const },
+              { id: 'favorites', name: '我的收藏', icon: '⭐', type: 'view' as const, count: favoriteCount },
               ...regionIds.map(id => ({
                 id,
                 name: id === 'dev' ? '研发效能'
@@ -67,24 +74,50 @@ export default function Header({
                   : id === 'ai' ? 'AI 能力'
                   : id === 'office' ? '办公协作'
                   : id === 'cloud' ? '云服务' : id,
-                icon: ''
+                icon: '',
+                type: 'region' as const,
               })),
-            ].map(item => (
-              <button
-                key={item.id}
-                onClick={() => item.id === 'all' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : scrollToRegion(item.id)}
-                className="px-2.5 py-1 rounded text-[11px] font-medium whitespace-nowrap transition-colors"
-                style={{
-                  backgroundColor: activeAnchor === item.id ? 'var(--t-accent-50)' : 'transparent',
-                  color: activeAnchor === item.id ? 'var(--t-accent-700)' : 'var(--t-text-sub)',
-                }}
-                onMouseEnter={(e) => { if (activeAnchor !== item.id) (e.currentTarget.style.backgroundColor = 'var(--t-border-sub)') }}
-                onMouseLeave={(e) => { if (activeAnchor !== item.id) (e.currentTarget.style.backgroundColor = 'transparent') }}
-              >
-                {item.icon && <span className="mr-0.5 text-xs">{item.icon}</span>}
-                {item.name}
-              </button>
-            ))}
+            ].map(item => {
+              const isViewActive = item.type === 'view' && view === item.id
+              const isRegionActive = item.type === 'region' && activeAnchor === item.id
+              const isActive = isViewActive || isRegionActive
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.type === 'view') {
+                      onViewChange(item.id as ViewMode)
+                      setActiveAnchor('')
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    } else {
+                      if (view !== 'overview') onViewChange('overview')
+                      scrollToRegion(item.id)
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded text-[11px] font-medium whitespace-nowrap transition-colors flex items-center gap-1"
+                  style={{
+                    backgroundColor: isActive ? 'var(--t-accent-50)' : 'transparent',
+                    color: isActive ? 'var(--t-accent-700)' : 'var(--t-text-sub)',
+                  }}
+                  onMouseEnter={(e) => { if (!isActive) (e.currentTarget.style.backgroundColor = 'var(--t-border-sub)') }}
+                  onMouseLeave={(e) => { if (!isActive) (e.currentTarget.style.backgroundColor = 'transparent') }}
+                >
+                  {item.icon && <span className="text-xs">{item.icon}</span>}
+                  <span>{item.name}</span>
+                  {item.type === 'view' && item.count !== undefined && item.count > 0 && (
+                    <span
+                      className="px-1 py-px text-[9px] font-bold rounded-full min-w-[14px] text-center"
+                      style={{
+                        backgroundColor: 'var(--t-accent-600)',
+                        color: '#fff',
+                      }}
+                    >
+                      {item.count}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </nav>
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
