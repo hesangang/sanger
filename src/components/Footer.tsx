@@ -8,44 +8,43 @@ export default function Footer() {
 
   return (
     <footer
-      className="mt-14 border-t"
+      className="mt-6 border-t"
       style={{
         backgroundColor: 'var(--t-card)',
         borderColor: 'var(--t-border-sub)',
       }}
     >
-      <div className="max-w-[1600px] mx-auto px-4 lg:px-6 py-8">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-6 mb-8">
+      <div className="max-w-[1600px] mx-auto px-3 lg:px-5 py-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-4">
           <div className="col-span-2">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-1.5 mb-2">
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
+                className="w-7 h-7 rounded-md flex items-center justify-center shadow-sm"
                 style={{
                   backgroundImage: 'linear-gradient(135deg, var(--t-accent-500), var(--t-accent-700))',
                 }}
               >
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
               </div>
               <div>
-                <div className="text-sm font-bold" style={{ color: 'var(--t-text-main)' }}>企业统一门户</div>
-                <div className="text-[10px]" style={{ color: 'var(--t-text-mute)' }}>Unified Portal Platform</div>
+                <div className="text-xs font-bold leading-none" style={{ color: 'var(--t-text-main)' }}>企业统一门户</div>
+                <div className="text-[9px] mt-0.5" style={{ color: 'var(--t-text-mute)' }}>Unified Portal Platform</div>
               </div>
             </div>
             <p
-              className="text-xs leading-relaxed mb-4 max-w-xs"
+              className="text-[11px] leading-relaxed mb-3 max-w-sm"
               style={{ color: 'var(--t-text-sub)' }}
             >
-              企业级统一访问入口，打通研发、运维、数据、AI、办公、云服务全链路能力，
-              赋能团队高效协作与数字化运营
+              企业级统一访问入口，研发、运维、数据、AI、办公、云服务全链路能力一站直达
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               {['G', 'G', '微', '邮', '钉'].map((s, i) => (
                 <a
                   key={i}
                   href="#"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-semibold transition-all border"
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold transition-all border"
                   style={{
                     backgroundColor: 'var(--t-border-sub)',
                     borderColor: 'var(--t-border-sub)',
@@ -54,13 +53,14 @@ export default function Footer() {
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--t-accent-50)';
                     e.currentTarget.style.color = 'var(--t-accent-600)';
-                    e.currentTarget.style.borderColor = 'var(--t-accent-300)';
+                    e.currentTarget.style.borderColor = 'var(--t-accent-200)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--t-border-sub)';
                     e.currentTarget.style.color = 'var(--t-text-sub)';
                     e.currentTarget.style.borderColor = 'var(--t-border-sub)';
                   }}
+                  aria-label={`入口 ${s}`}
                 >
                   {s}
                 </a>
@@ -70,17 +70,17 @@ export default function Footer() {
           {groups.map(g => (
             <div key={g.title}>
               <h4
-                className="text-xs font-bold mb-3"
+                className="text-[11px] font-bold mb-2"
                 style={{ color: 'var(--t-text-main)' }}
               >
                 {g.title}
               </h4>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {g.links.map(link => (
                   <li key={link}>
                     <a
                       href="#"
-                      className="text-xs transition-colors"
+                      className="text-[11px] transition-colors block"
                       style={{ color: 'var(--t-text-sub)' }}
                       onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--t-accent-600)' }}
                       onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--t-text-sub)' }}
@@ -95,11 +95,11 @@ export default function Footer() {
         </div>
 
         <div
-          className="pt-5 border-t flex flex-col md:flex-row items-center justify-between gap-3"
+          className="pt-3 border-t flex flex-col md:flex-row items-center justify-between gap-2"
           style={{ borderColor: 'var(--t-border-sub)' }}
         >
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]" style={{ color: 'var(--t-text-mute)' }}>
-            <span>© {new Date().getFullYear()} 企业统一门户平台. All rights reserved.</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]" style={{ color: 'var(--t-text-mute)' }}>
+            <span>© {new Date().getFullYear()} 企业统一门户</span>
             <a
               href="#"
               className="transition-colors"
@@ -128,8 +128,8 @@ export default function Footer() {
               安全规范
             </a>
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]" style={{ color: 'var(--t-text-mute)' }}>
-            <span>版本 v2.5.1</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]" style={{ color: 'var(--t-text-mute)' }}>
+            <span>v2.5.1</span>
             <span>京ICP备XXXXXXXX号-1</span>
           </div>
         </div>
