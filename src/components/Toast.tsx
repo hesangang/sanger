@@ -13,7 +13,7 @@ interface ToastProps {
 
 export default function Toast({ toasts, onDismiss }: ToastProps) {
   return (
-    <div className="fixed z-[100] bottom-4 right-4 sm:bottom-5 sm:right-5 flex flex-col gap-2 pointer-events-none">
+    <div className="fixed z-[100] bottom-5 right-5 sm:bottom-6 sm:right-6 flex flex-col gap-2.5 pointer-events-none">
       {toasts.map(t => (
         <ToastCard key={t.id} toast={t} onDismiss={onDismiss} />
       ))}
@@ -23,35 +23,44 @@ export default function Toast({ toasts, onDismiss }: ToastProps) {
 
 function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number) => void }) {
   useEffect(() => {
-    const timer = setTimeout(() => onDismiss(toast.id), 1800)
+    const timer = setTimeout(() => onDismiss(toast.id), 2200)
     return () => clearTimeout(timer)
   }, [toast.id, onDismiss])
 
-  const accentBg = toast.type === 'warn'
-    ? 'linear-gradient(135deg, #fcd34d, #f59e0b)'
-    : 'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))'
+  const gradient =
+    toast.type === 'warn'   ? 'linear-gradient(135deg, #FCD34D, #F59E0B)' :
+    toast.type === 'info'   ? 'linear-gradient(135deg, #60A5FA, #2563EB)' :
+                              'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))'
 
   return (
     <div
-      className="pointer-events-auto flex items-center gap-2 pr-3 pl-2 py-2 rounded-lg border shadow-lg backdrop-blur-sm animate-[slide-in_0.18s_ease-out]"
+      className="pointer-events-auto flex items-center gap-3 px-3.5 py-3 rounded-2xl border shadow-2xl animate-[slide-in_0.18s_ease-out]"
       style={{
-        minWidth: '200px',
-        backgroundColor: 'color-mix(in srgb, var(--t-card) 96%, transparent)',
-        borderColor: 'var(--t-border-sub)',
+        minWidth: '240px',
+        backgroundColor: 'var(--t-card)',
+        borderColor: 'var(--t-border-main)',
         color: 'var(--t-text-main)',
       }}
     >
       <div
-        className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
-        style={{ background: accentBg, color: '#fff' }}
+        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md"
+        style={{ background: gradient, color: '#fff' }}
       >
-        {toast.type === 'warn' ? '!' : (
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+        {toast.type === 'warn' ? (
+          <span className="text-base font-bold leading-none">!</span>
+        ) : toast.type === 'info' ? (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.2l-3.5-3.6L4 14l5 5 11-11-1.4-1.4L9 16.2z" />
           </svg>
         )}
       </div>
-      <span className="text-[11px] font-medium pr-1 whitespace-nowrap leading-none">{toast.message}</span>
+      <div className="flex-1 min-w-0">
+        <span className="text-[13px] font-medium block truncate leading-tight">{toast.message}</span>
+      </div>
     </div>
   )
 }

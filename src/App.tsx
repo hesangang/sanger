@@ -1,23 +1,31 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { regions } from './data/portal'
-import type { PortalRegion, PortalCard } from './data/portal'
-import Header, { type ViewMode } from './components/Header'
-import Hero from './components/Hero'
-import RegionSection from './components/RegionSection'
+import type { PortalCard } from './data/portal'
+import Header from './components/Header'
 import Footer from './components/Footer'
 import PortalCardItem from './components/PortalCardItem'
 import Toast, { type ToastItem } from './components/Toast'
 import { useFavorites } from './hooks/useFavorites'
-import { useCollapsedRegions } from './hooks/useCollapsedRegions'
 import { useRecentVisit } from './hooks/useRecentVisit'
-import { useScrollSpy } from './hooks/useScrollSpy'
 
 export type AccentKey = 'blue' | 'emerald' | 'violet' | 'rose' | 'amber'
 export type Mode = 'light' | 'dark'
+export type ViewMode = 'overview' | 'favorites' | 'recent'
 
 const STORAGE_MODE = 'portal:theme-mode'
 const STORAGE_ACCENT = 'portal:theme-accent'
 const STORAGE_VIEW = 'portal:view-mode'
+const STORAGE_TAB = 'portal:active-tab'
+
+const TAB_ALL = '__all__' as const
+
+const regionNameShort = (id: string) =>
+  id === 'dev' ? '研发效能' :
+  id === 'ops' ? '运维监控' :
+  id === 'data' ? '数据分析' :
+  id === 'ai'  ? 'AI 能力' :
+  id === 'office' ? '办公协作' :
+  id === 'cloud'  ? '云服务'   : '其他'
 
 export default function App() {
   const [search, setSearch] = useState('')
@@ -26,7 +34,7 @@ export default function App() {
     return (localStorage.getItem(STORAGE_VIEW) as ViewMode) || 'overview'
   })
   const [mode, setMode] = useState<Mode>(() => {
-    if (typeof window === 'undefined') return 'light'
+    if (typeof window === 'undefined') return 'dark'
     const saved = localStorage.getItem(STORAGE_MODE) as Mode | null
     if (saved) return saved
     return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -35,24 +43,14 @@ export default function App() {
     if (typeof window === 'undefined') return 'blue'
     return (localStorage.getItem(STORAGE_ACCENT) as AccentKey) || 'blue'
   })
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window === 'undefined') return TAB_ALL
+    return localStorage.getItem(STORAGE_TAB) ?? TAB_ALL
+  })
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const { favoriteIds, isFavorite, toggleFavorite } = useFavorites()
-  const { isCollapsed, toggle: toggleCollapsed } = useCollapsedRegions()
   const { recentIds, record: recordVisit } = useRecentVisit()
-
-  const regionIds = useMemo(() => regions.map(r => r.id), [])
-  const [spyActive] = useScrollSpy(regionIds, 108) // Hero(32) + Header(40) + ≈ padding(36)
-  const [manualActive, setManualActive] = useState<string | undefined>(undefined)
-
-  // 手动点击分区后，暂停 spy 高亮 700ms，避免 scrollIntoView 动画期间被下一个 section 覆盖
-  useEffect(() => {
-    if (!manualActive) return
-    const t = setTimeout(() => setManualActive(undefined), 750)
-    return () => clearTimeout(t)
-  }, [manualActive])
-
-  const regionAnchor = manualActive ?? spyActive
 
   useEffect(() => {
     const root = document.documentElement
@@ -66,16 +64,14 @@ export default function App() {
     localStorage.setItem(STORAGE_ACCENT, accent)
   }, [accent])
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_VIEW, view)
-  }, [view])
+  useEffect(() => { localStorage.setItem(STORAGE_VIEW, view) }, [view])
+  useEffect(() => { localStorage.setItem(STORAGE_TAB, activeTab) }, [activeTab])
 
   const toggleMode = () => setMode(m => (m === 'dark' ? 'light' : 'dark'))
 
   const pushToast = useCallback((message: string, type?: ToastItem['type']) => {
     setToasts(prev => [...prev, { id: Date.now() + Math.random(), message, type }])
   }, [])
-
   const dismissToast = useCallback((id: number) => {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
@@ -85,15 +81,15 @@ export default function App() {
     toggleFavorite(id)
     pushToast(
       willFavorite
-        ? `已收藏 · ${cardTitle ?? '系统'}`
-        : `已取消收藏 · ${cardTitle ?? '系统'}`
+        ? `已收藏 · ${cardTitle ?? '应用'}`
+        : `已取消收藏 · ${cardTitle ?? '应用'}`
     )
   }, [isFavorite, toggleFavorite, pushToast])
 
   const allCards = useMemo<PortalCard[]>(() => {
-    const result: PortalCard[] = []
-    regions.forEach(r => r.cards.forEach(c => result.push(c)))
-    return result
+    const list: PortalCard[] = []
+    regions.forEach(r => r.cards.forEach(c => list.push(c)))
+    return list
   }, [])
 
   const cardById = useMemo(() => {
@@ -102,72 +98,61 @@ export default function App() {
     return map
   }, [allCards])
 
-  const favoriteCards = useMemo<PortalCard[]>(() => {
-    return favoriteIds
-      .map(id => cardById.get(id))
-      .filter((c): c is PortalCard => !!c)
-  }, [favoriteIds, cardById])
+  const favoriteCards = useMemo<PortalCard[]>(
+    () => favoriteIds.map(id => cardById.get(id)).filter((c): c is PortalCard => !!c),
+    [favoriteIds, cardById],
+  )
+  const recentCards = useMemo<PortalCard[]>(
+    () => recentIds.map(id => cardById.get(id)).filter((c): c is PortalCard => !!c),
+    [recentIds, cardById],
+  )
 
-  const recentCards = useMemo<PortalCard[]>(() => {
-    return recentIds
-      .map(id => cardById.get(id))
-      .filter((c): c is PortalCard => !!c)
-  }, [recentIds, cardById])
+  const kw = search.trim().toLowerCase()
 
-  const filteredRegions = useMemo<PortalRegion[]>(() => {
-    if (!search.trim()) return regions
-    const kw = search.trim().toLowerCase()
-    return regions
-      .map(r => {
-        const cards: PortalCard[] = r.cards.filter(c =>
-          c.title.toLowerCase().includes(kw) ||
-          c.description.toLowerCase().includes(kw) ||
-          (c.tag ?? '').toLowerCase().includes(kw) ||
-          r.name.toLowerCase().includes(kw),
-        )
-        return { ...r, cards }
-      })
-      .filter(r => r.cards.length > 0)
-  }, [search])
-
-  const globalMatches = useMemo<PortalCard[]>(() => {
-    if (!search.trim()) return []
-    const kw = search.trim().toLowerCase()
-    const source =
-      view === 'favorites' ? favoriteCards :
-      view === 'recent'    ? recentCards    :
-      allCards
-    const result: PortalCard[] = []
-    source.forEach(c => {
-      if (
-        (c.title.toLowerCase().includes(kw) ||
-          c.description.toLowerCase().includes(kw) ||
-          (c.tag ?? '').toLowerCase().includes(kw)) &&
-        !result.find(x => x.id === c.id)
-      ) {
-        result.push(c)
-      }
-    })
-    return result
-  }, [search, view, favoriteCards, recentCards, allCards])
-
-  const filterByKeyword = (list: PortalCard[]) => {
-    if (!search.trim()) return list
-    const kw = search.trim().toLowerCase()
-    return list.filter(c =>
+  const applyKw = (list: PortalCard[]) =>
+    !kw ? list : list.filter(c =>
       c.title.toLowerCase().includes(kw) ||
       c.description.toLowerCase().includes(kw) ||
-      (c.tag ?? '').toLowerCase().includes(kw),
+      (c.tag ?? '').toLowerCase().includes(kw)
     )
+
+  // 视图决定数据源
+  const viewSource: PortalCard[] =
+    view === 'favorites' ? favoriteCards :
+    view === 'recent'    ? recentCards    :
+    allCards
+
+  // Tabs 筛选（只在 overview 视图下生效；其他视图下 Tabs 只读样式，不筛选数据源）
+  const tabFiltered: PortalCard[] =
+    view === 'overview'
+      ? activeTab === TAB_ALL
+        ? viewSource
+        : viewSource.filter(c => c.category === activeTab)
+      : viewSource
+
+  const displayCards = applyKw(tabFiltered)
+
+  // 构建 Tab 列表（带数量）
+  type TabItem = { id: string; label: string; count: number }
+  const tabs: TabItem[] = useMemo(() => {
+    const makeCount = (cat: string | undefined) => {
+      const base = view === 'favorites' ? favoriteCards : view === 'recent' ? recentCards : allCards
+      const data = cat === undefined ? base : base.filter(c => c.category === cat)
+      return !kw ? data.length : applyKw(data).length
+    }
+    const list: TabItem[] = [{ id: TAB_ALL, label: '全部', count: makeCount(undefined) }]
+    regions.forEach(r => list.push({ id: r.id, label: regionNameShort(r.id), count: makeCount(r.id) }))
+    return list
+  }, [view, favoriteCards, recentCards, allCards, kw])
+
+  const handleTabChange = (id: string) => {
+    if (view !== 'overview') setView('overview')
+    setActiveTab(id)
   }
 
-  const filteredFavorites = filterByKeyword(favoriteCards)
-  const filteredRecent    = filterByKeyword(recentCards)
-
-  const scrollToRegion = (id: string) => {
-    setManualActive(id)
-    const el = document.getElementById(`region-${id}`)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const handleViewChange = (v: ViewMode) => {
+    setView(v)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const renderCard = (card: PortalCard) => (
@@ -180,10 +165,18 @@ export default function App() {
     />
   )
 
-  const showHero = !search.trim()
+  const primaryBtnLabel =
+    view === 'favorites' ? '浏览全部应用' :
+    view === 'recent'    ? '返回控制台' :
+    `+ 快速收藏`
+
+  const onPrimaryClick = () => {
+    if (view === 'favorites' || view === 'recent') setView('overview')
+    else setView('favorites')
+  }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--t-bg)' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--t-bg)' }}>
       <Header
         search={search}
         setSearch={setSearch}
@@ -191,145 +184,145 @@ export default function App() {
         onToggleMode={toggleMode}
         accent={accent}
         onChangeAccent={setAccent}
+        onViewChange={handleViewChange}
       />
 
-      {showHero && (
-        <Hero
-          regions={regions}
-          onRegionClick={scrollToRegion}
-          activeId={regionAnchor}
-          view={view}
-          onViewChange={(v) => { setView(v); setManualActive(undefined) }}
-          favoriteCount={favoriteIds.length}
-          recentCount={recentIds.length}
-        />
-      )}
-
-      <main
-        className="max-w-[1600px] mx-auto px-2 lg:px-5 space-y-4 sm:space-y-5"
-        style={{ paddingTop: showHero ? '10px' : '12px', paddingBottom: '12px' }}
-      >
-        {search.trim() ? (
-          globalMatches.length === 0 ? (
-            <EmptyState
-              icon="🔍"
-              title={
-                <>
-                  没有匹配 “<span style={{ color: 'var(--t-text-main)' }}>{search}</span>” 的系统
-                </>
-              }
-              onClear={() => setSearch('')}
-            />
-          ) : (
-            <section
-              className="border rounded-lg p-2 sm:p-3"
-              style={{
-                borderColor: 'var(--t-border-sub)',
-                background: `linear-gradient(135deg, var(--t-accent-50) 0%, var(--t-card) 50%, var(--t-accent-50) 100%)`,
-              }}
-            >
-              <div className="flex items-center justify-between mb-2 sm:mb-2.5">
-                <div className="flex items-center gap-1.5">
-                  <div
-                    className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: 'var(--t-accent-600)' }}
-                  >
-                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xs font-bold" style={{ color: 'var(--t-text-main)' }}>
-                    搜索 “<span style={{ color: 'var(--t-accent-600)' }}>{search}</span>” · {globalMatches.length} 个结果
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setSearch('')}
-                  className="text-[10px] px-1.5 py-0.5 rounded hover:bg-white/60 transition-colors"
-                  style={{ color: 'var(--t-text-mute)' }}
-                >
-                  清空
-                </button>
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-1.5 sm:gap-2.5">
-                {globalMatches.map(renderCard)}
-              </div>
-            </section>
-          )
-        ) : view === 'favorites' ? (
-          favoriteCards.length === 0 ? (
+      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-4 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-7">
+        {/* 搜索结果 / 视图内无结果 的空态 */}
+        {search.trim() && displayCards.length === 0 ? (
+          <EmptyState
+            icon="🔍"
+            title={
+              <>
+                没有匹配 “<span style={{ color: 'var(--t-text-main)' }}>{search}</span>” 的应用
+              </>
+            }
+            subtitle={
+              view === 'favorites' ? '试试清空搜索，或在全部应用中搜索' :
+              view === 'recent'    ? '在最近访问中没有匹配项，试试浏览全部应用' :
+              '换个关键词，或检查应用名称是否正确'
+            }
+            onClear={() => setSearch('')}
+            action={view !== 'overview' ? { label: '浏览全部应用', onClick: () => { setView('overview'); setSearch('') }, variant: 'primary' } : undefined}
+          />
+        ) : !search.trim() && view !== 'overview' && displayCards.length === 0 ? (
+          view === 'favorites' ? (
             <EmptyState
               icon="⭐"
-              title="暂无收藏"
-              subtitle="点击卡片右上角的星星图标，将常用系统加入收藏"
-              action={{ label: '返回总览', onClick: () => setView('overview'), variant: 'primary' }}
-              iconSize="large"
-              padding="large"
+              title="暂无收藏的应用"
+              subtitle="点击应用卡片左下角「收藏」星标，将常用系统加入收藏，下次可在控制台一键访问"
+              action={{ label: '去浏览应用', onClick: () => setView('overview'), variant: 'primary' }}
             />
           ) : (
-            <ListSection
-              title="我的收藏"
-              count={filteredFavorites.length}
-              accentIcon={
-                <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-              }
-              grid
-            >
-              {filteredFavorites.length === 0 ? (
-                <EmptyInline message={`收藏中没有匹配 “${search}” 的结果`} onClear={() => setSearch('')} />
-              ) : (
-                filteredFavorites.map(renderCard)
-              )}
-            </ListSection>
-          )
-        ) : view === 'recent' ? (
-          recentCards.length === 0 ? (
             <EmptyState
               icon="🕒"
-              title="暂无访问记录"
-              subtitle="点击进入任意系统，这里会显示最近访问过的 12 个系统"
-              action={{ label: '去逛一逛', onClick: () => setView('overview'), variant: 'primary' }}
-              iconSize="large"
-              padding="large"
+              title="暂无最近访问记录"
+              subtitle="点击进入任意应用，这里会显示你最近访问过的最多 12 个系统"
+              action={{ label: '开始逛一逛', onClick: () => setView('overview'), variant: 'primary' }}
             />
-          ) : (
-            <ListSection
-              title="最近访问"
-              count={filteredRecent.length}
-              accentIcon={
-                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
-              grid
-            >
-              {filteredRecent.length === 0 ? (
-                <EmptyInline message={`最近访问中没有匹配 “${search}” 的结果`} onClear={() => setSearch('')} />
-              ) : (
-                filteredRecent.map(renderCard)
-              )}
-            </ListSection>
           )
         ) : (
-          filteredRegions.length === 0 ? (
-            <EmptyState
-              icon="🔍"
-              title="没有找到匹配的系统"
-              onClear={() => setSearch('')}
-            />
-          ) : (
-            filteredRegions.map(r => (
-              <RegionSection
-                key={r.id}
-                region={r}
-                collapsed={isCollapsed(r.id)}
-                onToggle={() => toggleCollapsed(r.id)}
+          <>
+            {/* 分类 Tabs + CTA：sticky 吸顶（Header h-16 = 64px） */}
+            <div
+              className="sticky z-30 rounded-2xl border p-2 sm:p-2.5 mb-3 sm:mb-4 flex items-center gap-2"
+              style={{
+                top: '64px',
+                backgroundColor: 'var(--t-card)',
+                borderColor: 'var(--t-border-sub)',
+                boxShadow: '0 6px 20px -16px color-mix(in srgb, #000 60%, transparent)',
+                backdropFilter: 'saturate(140%) blur(8px)',
+              }}
+              role="tablist"
+              aria-label="应用分类筛选"
+            >
+              <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide min-w-0 flex-1">
+                {tabs.map(t => {
+                  const isActive = view === 'overview' ? activeTab === t.id : t.id === TAB_ALL
+                  return (
+                    <button
+                      key={t.id}
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => handleTabChange(t.id)}
+                      className="relative inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
+                      style={{
+                        background: isActive
+                          ? 'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))'
+                          : 'transparent',
+                        color: isActive ? '#fff' : 'var(--t-text-sub)',
+                        boxShadow: isActive
+                          ? `0 6px 18px -8px color-mix(in srgb, var(--t-accent-500) 70%, transparent)`
+                          : 'none',
+                      } as React.CSSProperties}
+                      onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'var(--t-bg)'; e.currentTarget.style.color = 'var(--t-text-main)' } }}
+                      onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--t-text-sub)' } }}
+                    >
+                      <span>{t.label}</span>
+                      <span
+                        className="px-1.5 py-px rounded-full text-[10px] font-semibold min-w-[20px] text-center"
+                        style={{
+                          backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'var(--t-border-sub)',
+                          color: isActive ? '#fff' : 'var(--t-text-mute)',
+                        }}
+                      >
+                        {t.count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* CTA：浏览全部应用/返回控制台/+快速收藏 —— 随视图切换 */}
+              <button
+                onClick={onPrimaryClick}
+                className="flex-shrink-0 inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5"
+                style={{
+                  background: 'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))',
+                  boxShadow: `0 10px 24px -12px color-mix(in srgb, var(--t-accent-500) 60%, transparent)`,
+                }}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                onMouseUp={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
               >
-                {r.cards.map(renderCard)}
-              </RegionSection>
-            ))
-          )
+                {primaryBtnLabel.includes('+') && <span className="text-lg leading-none">+</span>}
+                <span className="hidden sm:inline">{primaryBtnLabel.replace('+ ', '')}</span>
+                <span className="sm:hidden">{primaryBtnLabel.includes('浏览') ? '全部' : primaryBtnLabel.includes('返回') ? '返回' : '收藏'}</span>
+              </button>
+            </div>
+
+            {/* 匹配结果数量栏（搜索态 or 视图态） */}
+            <div className="flex items-center justify-between mb-3.5 px-1">
+              <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-sub)' }}>
+                <span style={{ color: 'var(--t-text-mute)' }}>
+                  {view === 'overview' ? '当前分类' : view === 'favorites' ? '收藏夹' : '最近访问'}
+                </span>
+                <span>
+                  <span style={{ color: 'var(--t-text-main)', fontWeight: 600 }}>{displayCards.length}</span> 个匹配应用
+                </span>
+                {search.trim() && (
+                  <span className="hidden sm:inline" style={{ color: 'var(--t-text-mute)' }}>
+                    · 关键词 “<span style={{ color: 'var(--t-accent-500)' }}>{search}</span>”
+                  </span>
+                )}
+              </div>
+              {search.trim() && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="text-xs sm:text-sm px-2 py-1 rounded-lg transition-colors"
+                  style={{ color: 'var(--t-accent-500)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--t-accent-50)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  清空搜索
+                </button>
+              )}
+            </div>
+
+            {/* 卡片网格：UniLink 4列（sm:2 md:3 lg:4） */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+              {displayCards.map(renderCard)}
+            </div>
+          </>
         )}
       </main>
 
@@ -339,128 +332,66 @@ export default function App() {
   )
 }
 
-/* ---------- 小组件 ---------- */
-
 function EmptyState({
-  icon, title, subtitle, onClear, action, iconSize = 'normal', padding = 'normal',
+  icon, title, subtitle, onClear, action,
 }: {
   icon: string
   title: React.ReactNode
   subtitle?: string
   onClear?: () => void
   action?: { label: string; onClick: () => void; variant: 'primary' | 'ghost' }
-  iconSize?: 'normal' | 'large'
-  padding?: 'normal' | 'large'
 }) {
   return (
     <div
-      className={`border rounded-lg flex flex-col items-center justify-center ${padding === 'large' ? 'py-16' : 'py-10'}`}
+      className="border rounded-2xl flex flex-col items-center justify-center py-16 sm:py-20"
       style={{ borderColor: 'var(--t-border-sub)', backgroundColor: 'var(--t-card)' }}
     >
       <div
-        className={`rounded-full flex items-center justify-center mb-2.5 ${iconSize === 'large' ? 'w-14 h-14 text-3xl mb-3' : 'w-12 h-12 text-2xl'}`}
-        style={{ backgroundColor: 'var(--t-border-sub)' }}
+        className="rounded-3xl flex items-center justify-center mb-4 w-16 h-16 text-3xl sm:w-20 sm:h-20 sm:text-4xl"
+        style={{
+          backgroundColor: 'var(--t-border-sub)',
+          boxShadow: `inset 0 0 0 1px var(--t-border-main)`,
+        }}
       >
         {icon}
       </div>
-      <p className="text-xs font-semibold mb-1" style={{ color: 'var(--t-text-sub)' }}>{title}</p>
+      <p className="text-sm sm:text-base font-semibold mb-1.5" style={{ color: 'var(--t-text-main)' }}>{title}</p>
       {subtitle && (
-        <p className="text-[11px] mb-3" style={{ color: 'var(--t-text-mute)' }}>{subtitle}</p>
+        <p className="text-xs sm:text-[13px] mb-5 max-w-md text-center px-4" style={{ color: 'var(--t-text-mute)' }}>{subtitle}</p>
       )}
-      {action ? (
-        <button
-          onClick={action.onClick}
-          className="text-[11px] px-3 py-1 rounded font-medium transition-colors"
-          style={
-            action.variant === 'primary'
-              ? { backgroundColor: 'var(--t-accent-600)', color: '#fff' }
-              : { backgroundColor: 'transparent', color: 'var(--t-accent-600)' }
-          }
-          onMouseEnter={(e) => {
-            if (action.variant === 'primary') e.currentTarget.style.backgroundColor = 'var(--t-accent-700)'
-          }}
-          onMouseLeave={(e) => {
-            if (action.variant === 'primary') e.currentTarget.style.backgroundColor = 'var(--t-accent-600)'
-          }}
-        >
-          {action.label}
-        </button>
-      ) : onClear ? (
-        <button
-          onClick={onClear}
-          className="text-[11px] hover:underline mt-1"
-          style={{ color: 'var(--t-accent-600)' }}
-        >
-          清除搜索
-        </button>
-      ) : null}
-    </div>
-  )
-}
-
-function EmptyInline({ message, onClear }: { message: string; onClear?: () => void }) {
-  return (
-    <div
-      className="py-8 flex flex-col items-center justify-center col-span-full"
-      style={{ color: 'var(--t-text-sub)' }}
-    >
-      <p className="text-[11px]">{message}</p>
-      {onClear && (
-        <button
-          onClick={onClear}
-          className="text-[11px] hover:underline mt-1"
-          style={{ color: 'var(--t-accent-600)' }}
-        >
-          清除搜索
-        </button>
-      )}
-    </div>
-  )
-}
-
-function ListSection({
-  title, count, accentIcon, children, grid,
-}: {
-  title: string
-  count: number
-  accentIcon: React.ReactNode
-  children: React.ReactNode
-  grid?: boolean
-}) {
-  return (
-    <section
-      className="border rounded-lg p-2 sm:p-3"
-      style={{
-        borderColor: 'var(--t-border-sub)',
-        backgroundColor: 'var(--t-card)',
-        borderLeftWidth: '3px',
-        borderLeftColor: 'var(--t-accent-500)',
-      }}
-    >
-      <div className="flex items-center justify-between mb-2 sm:mb-2.5">
-        <div className="flex items-center gap-1.5">
-          <div
-            className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))' }}
+      <div className="flex items-center gap-2.5">
+        {action ? (
+          <button
+            onClick={action.onClick}
+            className="text-sm px-5 py-2.5 rounded-xl font-semibold transition-all hover:-translate-y-0.5"
+            style={{
+              background: action.variant === 'primary'
+                ? 'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))'
+                : 'transparent',
+              color: action.variant === 'primary' ? '#fff' : 'var(--t-accent-600)',
+              boxShadow: action.variant === 'primary'
+                ? `0 10px 30px -12px color-mix(in srgb, var(--t-accent-500) 60%, transparent)`
+                : 'none',
+            }}
           >
-            {accentIcon}
-          </div>
-          <h3 className="text-xs font-bold" style={{ color: 'var(--t-text-main)' }}>
-            {title}
-            <span
-              className="ml-1.5 px-1.5 py-px text-[9px] font-bold rounded-full"
-              style={{ backgroundColor: 'var(--t-accent-50)', color: 'var(--t-accent-700)' }}
-            >
-              {count}
-            </span>
-          </h3>
-        </div>
+            {action.label}
+          </button>
+        ) : null}
+        {onClear ? (
+          <button
+            onClick={onClear}
+            className="text-sm px-4 py-2.5 rounded-xl font-medium transition-colors border"
+            style={{
+              color: 'var(--t-accent-600)',
+              borderColor: 'var(--t-border-sub)',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--t-bg)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+          >
+            清除搜索
+          </button>
+        ) : null}
       </div>
-      {grid ? (
-        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-1.5 sm:gap-2.5">
-          {children}
-        </div>
-      ) : children}
-    </section>
+    </div>
   )
 }
