@@ -1,16 +1,17 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { regions } from './data/portal'
-import type { PortalCard } from './data/portal'
+import type { PortalCard, AccentKey } from './data/portal'
 import Header from './components/Header'
 import Footer from './components/Footer'
+import BottomTabBar from './components/BottomTabBar'
+import MinePage from './components/MinePage'
 import PortalCardItem from './components/PortalCardItem'
 import Toast, { type ToastItem } from './components/Toast'
 import { useFavorites } from './hooks/useFavorites'
 import { useRecentVisit } from './hooks/useRecentVisit'
 
-export type AccentKey = 'blue' | 'emerald' | 'violet' | 'rose' | 'amber'
 export type Mode = 'light' | 'dark'
-export type ViewMode = 'overview' | 'favorites' | 'recent'
+export type ViewMode = 'overview' | 'favorites' | 'recent' | 'mine'
 
 const STORAGE_MODE = 'portal:theme-mode'
 const STORAGE_ACCENT = 'portal:theme-accent'
@@ -24,7 +25,6 @@ const regionNameShort = (id: string) =>
   id === 'ops' ? '运维监控' :
   id === 'data' ? '数据分析' :
   id === 'ai'  ? 'AI 能力' :
-  id === 'office' ? '办公协作' :
   id === 'cloud'  ? '云服务'   : '其他'
 
 export default function App() {
@@ -48,6 +48,11 @@ export default function App() {
     return localStorage.getItem(STORAGE_TAB) ?? TAB_ALL
   })
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  // 移动端分区展开状态：key=region.id，true=展开全部，false/undefined=默认最多 8 个
+  const [expandedRegions, setExpandedRegions] = useState<Record<string, boolean>>({})
+
+  const toggleRegion = (rid: string) =>
+    setExpandedRegions(prev => ({ ...prev, [rid]: !prev[rid] }))
 
   const { favoriteIds, isFavorite, toggleFavorite } = useFavorites()
   const { recentIds, record: recordVisit } = useRecentVisit()
@@ -132,16 +137,32 @@ export default function App() {
 
   const displayCards = applyKw(tabFiltered)
 
+  // Tabs 标签显示逻辑（移动端两字简洁，桌面端完整）
+  const tabLabelFor = (id: string, full: string) => {
+    if (id === TAB_ALL) return '全部'
+    if (id === 'dev')   return '研发'
+    if (id === 'ops')   return '运维'
+    if (id === 'data')  return '分析'
+    if (id === 'ai')    return 'AI'
+    if (id === 'cloud') return '云服务'
+    return full
+  }
+
   // 构建 Tab 列表（带数量）
-  type TabItem = { id: string; label: string; count: number }
+  type TabItem = { id: string; label: string; count: number; short: string }
   const tabs: TabItem[] = useMemo(() => {
     const makeCount = (cat: string | undefined) => {
       const base = view === 'favorites' ? favoriteCards : view === 'recent' ? recentCards : allCards
       const data = cat === undefined ? base : base.filter(c => c.category === cat)
       return !kw ? data.length : applyKw(data).length
     }
-    const list: TabItem[] = [{ id: TAB_ALL, label: '全部', count: makeCount(undefined) }]
-    regions.forEach(r => list.push({ id: r.id, label: regionNameShort(r.id), count: makeCount(r.id) }))
+    const list: TabItem[] = [{ id: TAB_ALL, label: '全部', short: '全部', count: makeCount(undefined) }]
+    regions.forEach(r => list.push({
+      id: r.id,
+      label: regionNameShort(r.id),
+      short: tabLabelFor(r.id, regionNameShort(r.id)),
+      count: makeCount(r.id),
+    }))
     return list
   }, [view, favoriteCards, recentCards, allCards, kw])
 
@@ -187,45 +208,54 @@ export default function App() {
         onViewChange={handleViewChange}
       />
 
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-4 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-7">
-        {/* 搜索结果 / 视图内无结果 的空态 */}
-        {search.trim() && displayCards.length === 0 ? (
-          <EmptyState
-            icon="🔍"
-            title={
-              <>
-                没有匹配 “<span style={{ color: 'var(--t-text-main)' }}>{search}</span>” 的应用
-              </>
-            }
-            subtitle={
-              view === 'favorites' ? '试试清空搜索，或在全部应用中搜索' :
-              view === 'recent'    ? '在最近访问中没有匹配项，试试浏览全部应用' :
-              '换个关键词，或检查应用名称是否正确'
-            }
-            onClear={() => setSearch('')}
-            action={view !== 'overview' ? { label: '浏览全部应用', onClick: () => { setView('overview'); setSearch('') }, variant: 'primary' } : undefined}
+      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-24 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-7">
+        {/* 我的面板 */}
+        {view === 'mine' ? (
+          <MinePage
+            mode={mode}
+            onToggleMode={toggleMode}
+            accent={accent}
+            onChangeAccent={setAccent}
           />
-        ) : !search.trim() && view !== 'overview' && displayCards.length === 0 ? (
-          view === 'favorites' ? (
-            <EmptyState
-              icon="⭐"
-              title="暂无收藏的应用"
-              subtitle="点击应用卡片左下角「收藏」星标，将常用系统加入收藏，下次可在控制台一键访问"
-              action={{ label: '去浏览应用', onClick: () => setView('overview'), variant: 'primary' }}
-            />
-          ) : (
-            <EmptyState
-              icon="🕒"
-              title="暂无最近访问记录"
-              subtitle="点击进入任意应用，这里会显示你最近访问过的最多 12 个系统"
-              action={{ label: '开始逛一逛', onClick: () => setView('overview'), variant: 'primary' }}
-            />
-          )
         ) : (
-          <>
-            {/* 分类 Tabs + CTA：sticky 吸顶（Header h-16 = 64px） */}
+          /* 应用视图（搜索 / 收藏 / 最近 / 全部分类） */
+          search.trim() && displayCards.length === 0 ? (
+            <EmptyState
+              icon="🔍"
+              title={
+                <>
+                  没有匹配 “<span style={{ color: 'var(--t-text-main)' }}>{search}</span>” 的应用
+                </>
+              }
+              subtitle={
+                view === 'favorites' ? '试试清空搜索，或在全部应用中搜索' :
+                view === 'recent'    ? '在最近访问中没有匹配项，试试浏览全部应用' :
+                '换个关键词，或检查应用名称是否正确'
+              }
+              onClear={() => setSearch('')}
+              action={view !== 'overview' ? { label: '浏览全部应用', onClick: () => { setView('overview'); setSearch('') }, variant: 'primary' } : undefined}
+            />
+          ) : !search.trim() && view !== 'overview' && displayCards.length === 0 ? (
+            view === 'favorites' ? (
+              <EmptyState
+                icon="⭐"
+                title="暂无收藏的应用"
+                subtitle="点击应用卡片左下角「收藏」星标，将常用系统加入收藏，下次可在控制台一键访问"
+                action={{ label: '去浏览应用', onClick: () => setView('overview'), variant: 'primary' }}
+              />
+            ) : view === 'recent' ? (
+              <EmptyState
+                icon="🕒"
+                title="暂无最近访问记录"
+                subtitle="点击进入任意应用，这里会显示你最近访问过的最多 12 个系统"
+                action={{ label: '开始逛一逛', onClick: () => setView('overview'), variant: 'primary' }}
+              />
+            ) : null
+          ) : (
+            <>
+              {/* 分类 Tabs + CTA：sticky 吸顶 —— 移动端隐藏（sm:hidden），仅桌面端 sm+ 显示 */}
             <div
-              className="sticky z-30 rounded-2xl border p-2 sm:p-2.5 mb-3 sm:mb-4 flex items-center gap-2"
+              className="hidden sm:flex sticky z-30 rounded-2xl border p-2.5 mb-4 items-center gap-2"
               style={{
                 top: '64px',
                 backgroundColor: 'var(--t-card)',
@@ -258,9 +288,10 @@ export default function App() {
                       onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'var(--t-bg)'; e.currentTarget.style.color = 'var(--t-text-main)' } }}
                       onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--t-text-sub)' } }}
                     >
-                      <span>{t.label}</span>
-                      <span
-                        className="px-1.5 py-px rounded-full text-[10px] font-semibold min-w-[20px] text-center"
+                      {/* 桌面端：完整标签 + 数量；移动端：两字短标签，无数量 */}
+                      <span className="hidden sm:inline">{t.label}</span>
+                      <span className="sm:hidden">{t.short}</span>
+                      <span className="hidden sm:inline-block px-1.5 py-px rounded-full text-[10px] font-semibold min-w-[20px] text-center"
                         style={{
                           backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'var(--t-border-sub)',
                           color: isActive ? '#fff' : 'var(--t-text-mute)',
@@ -273,10 +304,10 @@ export default function App() {
                 })}
               </div>
 
-              {/* CTA：浏览全部应用/返回控制台/+快速收藏 —— 随视图切换 */}
+              {/* CTA：浏览全部应用/返回控制台/+快速收藏 —— 随视图切换（桌面端显示） */}
               <button
                 onClick={onPrimaryClick}
-                className="flex-shrink-0 inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5"
+                className="hidden sm:inline-flex flex-shrink-0 items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5"
                 style={{
                   background: 'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))',
                   boxShadow: `0 10px 24px -12px color-mix(in srgb, var(--t-accent-500) 60%, transparent)`,
@@ -285,13 +316,12 @@ export default function App() {
                 onMouseUp={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
               >
                 {primaryBtnLabel.includes('+') && <span className="text-lg leading-none">+</span>}
-                <span className="hidden sm:inline">{primaryBtnLabel.replace('+ ', '')}</span>
-                <span className="sm:hidden">{primaryBtnLabel.includes('浏览') ? '全部' : primaryBtnLabel.includes('返回') ? '返回' : '收藏'}</span>
+                <span>{primaryBtnLabel.replace('+ ', '')}</span>
               </button>
             </div>
 
-            {/* 匹配结果数量栏（搜索态 or 视图态） */}
-            <div className="flex items-center justify-between mb-3.5 px-1">
+            {/* 匹配结果数量栏（搜索态 or 视图态）—— 移动端隐藏，桌面端 sm+ 显示 */}
+            <div className="hidden sm:flex items-center justify-between mb-3.5 px-1">
               <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-sub)' }}>
                 <span style={{ color: 'var(--t-text-mute)' }}>
                   {view === 'overview' ? '当前分类' : view === 'favorites' ? '收藏夹' : '最近访问'}
@@ -318,15 +348,84 @@ export default function App() {
               )}
             </div>
 
-            {/* 卡片网格：UniLink 4列（sm:2 md:3 lg:4） */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+            {/* 桌面端 sm+：卡片网格（完整卡片样式，原 2/3/4 阶梯） */}
+            <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
               {displayCards.map(renderCard)}
             </div>
+
+            {/* 移动端 sm 以下：按 regions 分区域展示 —— 每个分区默认最多 8 个，点击「全部›」展开显示全部 */}
+            {/* 搜索态（有关键词输入）直接平铺，不分区块，匹配集中显示；无匹配分区自动过滤不显示 */}
+            <div className="sm:hidden space-y-6">
+              {search.trim() ? (
+                <div className="grid grid-cols-4 gap-x-2 gap-y-3">
+                  {displayCards.map(renderCard)}
+                </div>
+              ) : (
+                regions.map(r => {
+                  const regCards = displayCards.filter(c => c.category === r.id)
+                  if (regCards.length === 0) return null
+                  const expanded = !!expandedRegions[r.id]
+                  const showExpandBtn = regCards.length > 8
+                  const visibleCards = expanded ? regCards : regCards.slice(0, 8)
+                  return (
+                    <section key={r.id} className="space-y-2.5">
+                      <div className="flex items-center gap-2.5 px-0.5">
+                        {/* 分区色条（与 PC 端 5 套 accent 色系独立对应，不随用户主题色切换改变） */}
+                        <span
+                          className="w-1 h-5 rounded-full"
+                          style={{
+                            background:
+                              r.id === 'dev'   ? 'linear-gradient(180deg,#A78BFA,#7C3AED)' :
+                              r.id === 'ops'   ? 'linear-gradient(180deg,#10B981,#047857)' :
+                              r.id === 'data'  ? 'linear-gradient(180deg,#22D3EE,#0E7490)' :
+                              r.id === 'ai'    ? 'linear-gradient(180deg,#FB7185,#BE123C)' :
+                                                 'linear-gradient(180deg,#67E8F9,#06B6D4)',
+                          }}
+                          aria-hidden
+                        />
+                        <h4 className="text-[15px] font-bold tracking-tight" style={{ color: 'var(--t-text-main)' }}>
+                          {regionNameShort(r.id)}
+                        </h4>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold" style={{
+                          backgroundColor: 'color-mix(in srgb, var(--t-accent-500) 12%, transparent)',
+                          color: 'var(--t-accent-600)',
+                        }}>
+                          {regCards.length}
+                        </span>
+                        {showExpandBtn && (
+                          <button
+                            onClick={() => toggleRegion(r.id)}
+                            className="ml-auto text-[11px] flex items-center gap-0.5 px-2 py-1 rounded-lg transition-colors active:bg-[var(--t-bg)]"
+                            style={{ color: expanded ? 'var(--t-text-mute)' : 'var(--t-accent-600)' }}
+                          >
+                            <span>{expanded ? '收起' : '全部'}</span>
+                            <svg className="w-3 h-3 transition-transform" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(90deg)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-4 gap-x-2 gap-y-3">
+                        {visibleCards.map(renderCard)}
+                      </div>
+                    </section>
+                  )
+                })
+              )}
+            </div>
           </>
+          )
         )}
       </main>
 
-      <Footer />
+      <div className="hidden sm:block"><Footer /></div>
+      <BottomTabBar
+        view={view}
+        onViewChange={handleViewChange}
+        search={search}
+        onSearchChange={setSearch}
+        onShowTBD={(msg) => pushToast(msg, 'warn')}
+      />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>
   )

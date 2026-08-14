@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import type { AccentKey, Mode } from '../App'
+import type { Mode } from '../App'
 import type { ViewMode } from '../App'
+import type { AccentKey } from '../data/portal'
+import { ACCENTS } from '../data/portal'
 
 interface HeaderProps {
   search: string
@@ -11,14 +13,6 @@ interface HeaderProps {
   onChangeAccent: (a: AccentKey) => void
   onViewChange: (v: ViewMode) => void
 }
-
-const ACCENTS: { key: AccentKey; label: string; swatch: string }[] = [
-  { key: 'blue',    label: '紫罗兰（默认）', swatch: 'linear-gradient(135deg,#A78BFA,#7C3AED)' },
-  { key: 'violet',  label: '青蓝',         swatch: 'linear-gradient(135deg,#67E8F9,#06B6D4)' },
-  { key: 'emerald', label: '薄荷绿',       swatch: 'linear-gradient(135deg,#34D399,#059669)' },
-  { key: 'amber',   label: '暖橙',         swatch: 'linear-gradient(135deg,#FB923C,#EA580C)' },
-  { key: 'rose',    label: '玫瑰红',       swatch: 'linear-gradient(135deg,#FB7185,#E11D48)' },
-]
 
 interface TopNavItem { id: ViewMode; label: string }
 const TOP_NAV: TopNavItem[] = [
@@ -66,30 +60,41 @@ export default function Header({
 
   return (
     <header
-      className="sticky top-0 z-50 border-b"
+      className="sticky top-0 z-50 border-b hidden sm:block"
       style={{
         backgroundColor: 'var(--t-header)',
         borderColor: 'var(--t-border-sub)',
       }}
     >
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4 min-w-0">
-          {/* 左侧 Logo：S 方块 + SanGer 文字 */}
-          <div className="flex items-center gap-2.5 flex-shrink-0">
+        <div className="flex items-center justify-between h-14 sm:h-16 gap-4 min-w-0">
+          {/* 左侧 Logo：SG 徽章 + SanGer 文字（仅桌面端显示，移动端完全隐藏） */}
+          <div className="hidden sm:flex items-center gap-2.5 flex-shrink-0">
             <div
-              className="rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
+              className="rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 relative overflow-hidden"
               style={{
-                width: '34px', height: '34px',
-                background: 'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))',
+                width: '36px', height: '36px',
+                background: 'linear-gradient(135deg, var(--t-accent-400) 0%, var(--t-accent-500) 50%, var(--t-accent-700) 100%)',
               }}
             >
-              <span className="text-white font-bold text-[17px] leading-none -mb-0.5">S</span>
+              <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle at 20% 20%, #fff 0%, transparent 50%)' }} />
+              <span className="relative text-white font-black text-[14px] leading-none tracking-tighter select-none" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>SG</span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[19px] font-bold tracking-tight" style={{ color: 'var(--t-text-main)' }}>
+              <span className="text-[20px] font-black tracking-tight" style={{
+                color: 'var(--t-text-main)',
+                background: 'linear-gradient(135deg, var(--t-accent-500) 0%, var(--t-accent-600) 50%, var(--t-accent-700) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>
                 SanGer
               </span>
-              <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: 'var(--t-accent-600)', color: '#fff' }}>
+              <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{
+                background: 'linear-gradient(135deg, var(--t-accent-500), var(--t-accent-700))',
+                color: '#fff',
+                boxShadow: `0 1px 4px color-mix(in srgb, var(--t-accent-500) 30%, transparent)`,
+              }}>
                 企业版
               </span>
             </div>
@@ -119,9 +124,9 @@ export default function Header({
           </nav>
 
           {/* 右侧：搜索框 / 通知 / 设置 / 头像 */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {/* 搜索框 */}
-            <div className="relative hidden sm:block">
+          <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* 搜索框（桌面端） */}
+            <div className="relative block">
               <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none" style={{ color: 'var(--t-text-mute)' }}>
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
