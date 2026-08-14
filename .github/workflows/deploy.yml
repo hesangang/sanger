@@ -33,10 +33,18 @@ jobs:
 
       - name: Build (auto-inject GitHub Pages sub-path base)
         env:
-          # 自动从仓库名推导 base：<用户名>.github.io/<仓库名>/
-          VITE_BASE: "/${{ github.event.repository.name }}/"
+          # 用户专属仓库（<用户名>.github.io）走根路径 base="/"
+          # 普通项目仓库（<用户名>.github.io/<repo>）走 "/<repo>/"
+          GH_IS_USER_SITE: ${{ github.event.repository.name == format('{0}.github.io', github.repository_owner) }}
+          GH_REPO_NAME: ${{ github.event.repository.name }}
         run: |
+          if [ "$GH_IS_USER_SITE" = "true" ]; then
+            VITE_BASE="/"
+          else
+            VITE_BASE="/$GH_REPO_NAME/"
+          fi
           echo "VITE_BASE=$VITE_BASE"
+          echo "VITE_BASE=$VITE_BASE" >> $GITHUB_ENV
           npm run build
 
       - name: Upload GitHub Pages artifact
