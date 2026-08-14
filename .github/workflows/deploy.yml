@@ -44,8 +44,20 @@ jobs:
           echo "--- dist/assets（确认文件存在，后面 Pages 404 就是 CDN 缓存问题）---"
           ls -1 dist/assets 2>/dev/null || true
 
+      - name: Verify dist structure（上传前确认 /assets 内 CSS/JS 都在）
+        run: |
+          echo "--- dist/ root"
+          ls -la dist
+          echo "--- dist/assets/ listing"
+          ls -la dist/assets 2>/dev/null || echo "NO dist/assets DIR FOUND !!"
+          echo "--- find dist -type f"
+          find dist -type f | sort
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
       - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -59,4 +71,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
