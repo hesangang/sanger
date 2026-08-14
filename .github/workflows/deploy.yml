@@ -1,18 +1,17 @@
-name: Deploy SanGer to GitHub Pages (方式 B: GitHub Actions OIDC)
+name: Deploy SanGer to GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# ⚠️ 方式 B 必须的 3 个 permissions（OIDC token + 上传 Artifact + 读代码）
 permissions:
   contents: read
   pages: write
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
@@ -30,37 +29,32 @@ jobs:
           cache: npm
 
       - name: Setup Pages
-        # 方式 B 必须：OIDC token 初始化 + Pages 上下文注册
         uses: actions/configure-pages@v5
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build with Vite (base=/sanger/ for project page hesangang/sanger)
+      - name: Build
         env:
-          VITE_BASE: "/sanger/"
+          VITE_BASE: /sanger/
         run: |
-          echo "===== package.json name & homepage ====="
-          node -e "const {name,homepage}=require('./package.json'); console.log('name=',name); console.log('homepage=',homepage)"
-          echo "===== vite.config.ts base ====="
-          grep -nE "base:" vite.config.ts || true
-          echo "===== public 目录（确认没有 index.html 覆盖王）====="
-          ls -la public 2>/dev/null || echo "<empty or not exists>"
-          echo "===== 入口 index.html head 前 20 行 ====="
-          head -n 20 index.html
-          echo "===== VITE_BASE=$VITE_BASE ====="
-          npm run build || { echo "BUILD FAILED, listing dist if any"; ls -la dist 2>/dev/null; exit 1; }
-          echo "===== 构建完成：dist 全量文件列表 ====="
+          set -e
+          echo "[debug] package.json name + homepage"
+          node -e "const {name,homepage}=require('./package.json'); console.log('name:', name); console.log('homepage:', homepage)"
+          echo "[debug] vite base"
+          grep -n "base:" vite.config.ts || true
+          echo "[debug] public listing"
+          ls -la public 2>/dev/null || echo "<empty>"
+          echo "[debug] VITE_BASE=$VITE_BASE"
+          npm run build
+          echo "[debug] dist files"
           find dist -type f | sort
-          echo "===== dist/index.html 完整内容 ====="
-          cat dist/index.html || true
-          echo "===== dist/assets 文件 size 确认 ====="
-          ls -la dist/assets 2>/dev/null || echo "NO ASSETS DIR ❌"
+          echo "[debug] dist/index.html"
+          cat dist/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          name: github-pages
           path: dist
 
   deploy:
@@ -71,6 +65,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
