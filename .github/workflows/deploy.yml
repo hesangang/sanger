@@ -1,26 +1,23 @@
-name: Deploy SanGer to GitHub Pages (gh-pages 分支)
+name: Deploy SanGer to GitHub Pages (方式 B: GitHub Actions OIDC)
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# 本 workflow 走最稳妥的 gh-pages 分支发布方案（hesangang/sanger 普通项目仓库）：
-# 1. main 分支 commit 进来
-# 2. node 20 + npm ci + npm run build（base=/sanger/，项目页子路径）
-# 3. peaceiris/actions-gh-pages 把 dist/* 推到 gh-pages 分支根目录
-# 4. Settings → Pages → Source 选 "Deploy from branch" → gh-pages / root
-# 5. 访问地址：https://hesangang.github.io/sanger/
+# ⚠️ 方式 B 必须的 3 个 permissions（OIDC token + 上传 Artifact + 读代码）
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: "pages-gh-pages-branch"
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
-    name: Build & Deploy to gh-pages
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,29 +29,48 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Setup Pages
+        # 方式 B 必须：OIDC token 初始化 + Pages 上下文注册
+        uses: actions/configure-pages@v5
+
       - name: Install dependencies
         run: npm ci
 
-      - name: Build with Vite (base=/sanger/ for hesangang/sanger project page)
+      - name: Build with Vite (base=/sanger/ for project page hesangang/sanger)
         env:
           VITE_BASE: "/sanger/"
         run: |
-          echo "VITE_BASE=$VITE_BASE"
-          npm run build
-          echo "--- dist/index.html ---"
-          cat dist/index.html || true
-          echo "--- dist/assets ---"
-          ls -1 dist/assets 2>/dev/null || true
-          echo "--- find dist -type f | sort ---"
+          echo "===== package.json name & homepage ====="
+          node -e "const {name,homepage}=require('./package.json'); console.log('name=',name); console.log('homepage=',homepage)"
+          echo "===== vite.config.ts base ====="
+          grep -nE "base:" vite.config.ts || true
+          echo "===== public 目录（确认没有 index.html 覆盖王）====="
+          ls -la public 2>/dev/null || echo "<empty or not exists>"
+          echo "===== 入口 index.html head 前 20 行 ====="
+          head -n 20 index.html
+          echo "===== VITE_BASE=$VITE_BASE ====="
+          npm run build || { echo "BUILD FAILED, listing dist if any"; ls -la dist 2>/dev/null; exit 1; }
+          echo "===== 构建完成：dist 全量文件列表 ====="
           find dist -type f | sort
+          echo "===== dist/index.html 完整内容 ====="
+          cat dist/index.html || true
+          echo "===== dist/assets 文件 size 确认 ====="
+          ls -la dist/assets 2>/dev/null || echo "NO ASSETS DIR ❌"
 
-      - name: Deploy dist/ to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: gh-pages
-          force_orphan: true
-          user_name: "github-actions[bot]"
-          user_email: "41898282+github-actions[bot]@users.noreply.github.com"
-          commit_message: "chore(pages): deploy SanGer from commit ${{ github.sha }}"
+          name: github-pages
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
