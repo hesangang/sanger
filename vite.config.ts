@@ -2,15 +2,14 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-// 本仓库部署在 hesangang.github.io（用户专属主页仓库），
-// Pages 根路径是 "/"，不需要 "<用户名>.github.io/<仓库名>/" 子路径。
-// 因此默认 base="/"，不依赖任何环境变量，避免 workflow 判断错误导致 404。
-// 如果之后迁移到普通项目仓库（如 github.com/hesangang/sanger），
-//   再改为 base: env.VITE_BASE ?? '/sanger/'
+// 本仓库 = 普通项目仓库：https://github.com/hesangang/sanger
+// GitHub Pages 访问地址 = https://hesangang.github.io/sanger/
+// 所以 base 必须是 "/sanger/"，所有静态资源（assets、sanger.svg）自动加此前缀
+// 本地 dev 不影响（仍可 http://localhost:5173/ 直接访问）
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '')
   return {
     plugins: [react(), tailwindcss()],
-    base: env.VITE_BASE ?? '/',
+    base: env.VITE_BASE ?? '/sanger/',
   }
 })

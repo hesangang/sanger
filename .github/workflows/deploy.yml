@@ -5,11 +5,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# 本 workflow 走最稳妥的 gh-pages 分支发布方案：
+# 本 workflow 走最稳妥的 gh-pages 分支发布方案（hesangang/sanger 普通项目仓库）：
 # 1. main 分支 commit 进来
-# 2. node 20 + npm ci + npm run build（base=/，hesangang.github.io 用户专属主页）
-# 3. peaceiris/actions-gh-pages 把 dist/* 推到 gh-pages 分支
+# 2. node 20 + npm ci + npm run build（base=/sanger/，项目页子路径）
+# 3. peaceiris/actions-gh-pages 把 dist/* 推到 gh-pages 分支根目录
 # 4. Settings → Pages → Source 选 "Deploy from branch" → gh-pages / root
+# 5. 访问地址：https://hesangang.github.io/sanger/
 permissions:
   contents: write
 
@@ -34,9 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build with Vite (base=/ for hesangang.github.io)
+      - name: Build with Vite (base=/sanger/ for hesangang/sanger project page)
         env:
-          VITE_BASE: "/"
+          VITE_BASE: "/sanger/"
         run: |
           echo "VITE_BASE=$VITE_BASE"
           npm run build
