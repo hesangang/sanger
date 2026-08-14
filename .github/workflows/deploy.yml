@@ -33,19 +33,29 @@ jobs:
 
       - name: Build (auto-inject GitHub Pages sub-path base)
         env:
-          # 用户专属仓库（<用户名>.github.io）走根路径 base="/"
-          # 普通项目仓库（<用户名>.github.io/<repo>）走 "/<repo>/"
-          GH_IS_USER_SITE: ${{ github.event.repository.name == format('{0}.github.io', github.repository_owner) }}
+          # 关键：hesangang.github.io 这种用户专属仓库名
+          #   => repository.name = "hesangang.github.io"，repository_owner = "hesangang"
+          #   => 如果 name 等于 "<owner>.github.io" 就视为用户专属主页，base='/'
+          # 其他项目仓库（如 sanger） => base="/sanger/"
+          GH_REPO_OWNER: ${{ github.repository_owner }}
           GH_REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          if [ "$GH_IS_USER_SITE" = "true" ]; then
+          EXPECTED_USER_SITE="${GH_REPO_OWNER}.github.io"
+          if [ "$GH_REPO_NAME" = "$EXPECTED_USER_SITE" ]; then
             VITE_BASE="/"
           else
             VITE_BASE="/$GH_REPO_NAME/"
           fi
+          echo "REPO_OWNER=$GH_REPO_OWNER"
+          echo "REPO_NAME=$GH_REPO_NAME"
+          echo "EXPECTED_USER_SITE=$EXPECTED_USER_SITE"
           echo "VITE_BASE=$VITE_BASE"
           echo "VITE_BASE=$VITE_BASE" >> $GITHUB_ENV
           npm run build
+          echo "--- dist/index.html contains ---"
+          cat dist/index.html || true
+          echo "--- dist/assets listing ---"
+          ls dist/assets 2>/dev/null || true
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
