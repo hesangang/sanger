@@ -1,8 +1,9 @@
 {
-  "name": "open-pt",
+  "name": "sanger",
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "homepage": "https://hesangang.github.io/sanger/",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
