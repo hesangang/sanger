@@ -2,6 +2,10 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <!-- ⚠️ GitHub Pages 子路径部署关键：<base> 让浏览器对所有
+         相对路径、HTML5 history.pushState、fetch('/xxx') 自动加上 /sanger/ 前缀。
+         解决：首屏 /sanger/ 200 后，后续请求/跳转跳出到 /assets 或 / 而 404 的问题 -->
+    <base href="/sanger/" />
     <link rel="icon" type="image/svg+xml" href="/sanger.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SanGer · 统一服务门户</title>
