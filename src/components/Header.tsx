@@ -12,17 +12,18 @@ interface HeaderProps {
   accent: AccentKey
   onChangeAccent: (a: AccentKey) => void
   onViewChange: (v: ViewMode) => void
+  view: ViewMode
 }
 
 interface TopNavItem { id: ViewMode; label: string }
 const TOP_NAV: TopNavItem[] = [
-  { id: 'overview',  label: '控制台' },
-  { id: 'overview',  label: '应用管理' },
+  { id: 'overview',  label: '首页' },
+  { id: 'system',    label: '系统管理' },
   { id: 'overview',  label: '数据看板' },
 ]
 
 export default function Header({
-  search, setSearch, mode, onToggleMode, accent, onChangeAccent, onViewChange,
+  search, setSearch, mode, onToggleMode, accent, onChangeAccent, onViewChange, view,
 }: HeaderProps) {
   const [showSettings, setShowSettings] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -52,11 +53,11 @@ export default function Header({
   }, [showUserMenu])
 
   const handleNavClick = (_id: ViewMode, label: string) => {
-    if (label === '控制台') onViewChange('overview')
+    if (label === '系统管理') onViewChange('system')
     else onViewChange('overview')
   }
 
-  const navActiveLabel = '控制台'
+  const navActiveLabel = view === 'system' ? '系统管理' : '首页'
 
   return (
     <header
@@ -134,7 +135,7 @@ export default function Header({
               </div>
               <input
                 type="text"
-                placeholder={search ? '' : '搜索应用…'}
+                placeholder={search ? '' : '搜索系统…'}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8 pr-3 py-1.5 text-sm rounded-xl border focus:outline-none focus:ring-2 transition-all w-44 lg:w-64"
@@ -147,7 +148,7 @@ export default function Header({
                 } as React.CSSProperties}
                 onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--t-accent-500)' }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--t-border-sub)' }}
-                aria-label="搜索应用或集成"
+                aria-label="搜索系统或集成"
               />
             </div>
 

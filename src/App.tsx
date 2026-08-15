@@ -5,13 +5,14 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import BottomTabBar from './components/BottomTabBar'
 import MinePage from './components/MinePage'
+import SystemPage from './components/SystemPage'
 import PortalCardItem from './components/PortalCardItem'
 import Toast, { type ToastItem } from './components/Toast'
 import { useFavorites } from './hooks/useFavorites'
 import { useRecentVisit } from './hooks/useRecentVisit'
 
 export type Mode = 'light' | 'dark'
-export type ViewMode = 'overview' | 'favorites' | 'recent' | 'mine'
+export type ViewMode = 'overview' | 'favorites' | 'recent' | 'mine' | 'system'
 
 const STORAGE_MODE = 'portal:theme-mode'
 const STORAGE_ACCENT = 'portal:theme-accent'
@@ -86,8 +87,8 @@ export default function App() {
     toggleFavorite(id)
     pushToast(
       willFavorite
-        ? `已收藏 · ${cardTitle ?? '应用'}`
-        : `已取消收藏 · ${cardTitle ?? '应用'}`
+        ? `已收藏 · ${cardTitle ?? '系统'}`
+        : `已取消收藏 · ${cardTitle ?? '系统'}`
     )
   }, [isFavorite, toggleFavorite, pushToast])
 
@@ -187,8 +188,8 @@ export default function App() {
   )
 
   const primaryBtnLabel =
-    view === 'favorites' ? '浏览全部应用' :
-    view === 'recent'    ? '返回控制台' :
+    view === 'favorites' ? '浏览全部系统' :
+    view === 'recent'    ? '返回首页' :
     `+ 快速收藏`
 
   const onPrimaryClick = () => {
@@ -206,6 +207,7 @@ export default function App() {
         accent={accent}
         onChangeAccent={setAccent}
         onViewChange={handleViewChange}
+        view={view}
       />
 
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-24 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-7">
@@ -217,31 +219,33 @@ export default function App() {
             accent={accent}
             onChangeAccent={setAccent}
           />
+        ) : view === 'system' ? (
+          <SystemPage />
         ) : (
-          /* 应用视图（搜索 / 收藏 / 最近 / 全部分类） */
+          /* 系统视图（搜索 / 收藏 / 最近 / 全部分类） */
           search.trim() && displayCards.length === 0 ? (
             <EmptyState
               icon="🔍"
               title={
                 <>
-                  没有匹配 “<span style={{ color: 'var(--t-text-main)' }}>{search}</span>” 的应用
+                  没有匹配 “<span style={{ color: 'var(--t-text-main)' }}>{search}</span>” 的系统
                 </>
               }
               subtitle={
-                view === 'favorites' ? '试试清空搜索，或在全部应用中搜索' :
-                view === 'recent'    ? '在最近访问中没有匹配项，试试浏览全部应用' :
-                '换个关键词，或检查应用名称是否正确'
+                view === 'favorites' ? '试试清空搜索，或在全部系统中搜索' :
+                view === 'recent'    ? '在最近访问中没有匹配项，试试浏览全部系统' :
+                '换个关键词，或检查系统名称是否正确'
               }
               onClear={() => setSearch('')}
-              action={view !== 'overview' ? { label: '浏览全部应用', onClick: () => { setView('overview'); setSearch('') }, variant: 'primary' } : undefined}
+              action={view !== 'overview' ? { label: '浏览全部系统', onClick: () => { setView('overview'); setSearch('') }, variant: 'primary' } : undefined}
             />
           ) : !search.trim() && view !== 'overview' && displayCards.length === 0 ? (
             view === 'favorites' ? (
               <EmptyState
                 icon="⭐"
-                title="暂无收藏的应用"
-                subtitle="点击应用卡片左下角「收藏」星标，将常用系统加入收藏，下次可在控制台一键访问"
-                action={{ label: '去浏览应用', onClick: () => setView('overview'), variant: 'primary' }}
+                title="暂无收藏的系统"
+                subtitle="点击系统卡片左下角「收藏」星标，将常用系统加入收藏，下次可在首页一键访问"
+                action={{ label: '去浏览系统', onClick: () => setView('overview'), variant: 'primary' }}
               />
             ) : view === 'recent' ? (
               <EmptyState
@@ -264,7 +268,7 @@ export default function App() {
                 backdropFilter: 'saturate(140%) blur(8px)',
               }}
               role="tablist"
-              aria-label="应用分类筛选"
+              aria-label="系统分类筛选"
             >
               <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide min-w-0 flex-1">
                 {tabs.map(t => {
@@ -304,7 +308,7 @@ export default function App() {
                 })}
               </div>
 
-              {/* CTA：浏览全部应用/返回控制台/+快速收藏 —— 随视图切换（桌面端显示） */}
+              {/* CTA：浏览全部系统/返回首页/+快速收藏 —— 随视图切换（桌面端显示） */}
               <button
                 onClick={onPrimaryClick}
                 className="hidden sm:inline-flex flex-shrink-0 items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5"
@@ -327,7 +331,7 @@ export default function App() {
                   {view === 'overview' ? '当前分类' : view === 'favorites' ? '收藏夹' : '最近访问'}
                 </span>
                 <span>
-                  <span style={{ color: 'var(--t-text-main)', fontWeight: 600 }}>{displayCards.length}</span> 个匹配应用
+                  <span style={{ color: 'var(--t-text-main)', fontWeight: 600 }}>{displayCards.length}</span> 个匹配系统
                 </span>
                 {search.trim() && (
                   <span className="hidden sm:inline" style={{ color: 'var(--t-text-mute)' }}>

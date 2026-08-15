@@ -19,7 +19,7 @@ const TABS: {
 }[] = [
   {
     id: 'console',
-    label: '控制台',
+    label: '首页',
     icon: (active) => (
       <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -28,7 +28,7 @@ const TABS: {
   },
   {
     id: 'apps',
-    label: '应用',
+    label: '系统',
     icon: (active) => (
       <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -79,7 +79,8 @@ export default function BottomTabBar({
 
   const getActiveId = (): TabId => {
     if (view === 'mine') return 'mine'
-    // 移动端 APP：全量应用卡片（overview）属于「控制台」，无论 overview/favorites/recent 都让控制台高亮
+    if (view === 'system') return 'apps'
+    // 移动端 APP：全量系统卡片（overview）属于「首页」，无论 overview/favorites/recent 都让首页高亮
     return 'console'
   }
   const activeId = getActiveId()
@@ -87,14 +88,14 @@ export default function BottomTabBar({
   const handleClick = (id: TabId) => {
     if (expanded) return
     if (id === 'console') {
-      // 控制台 Tab → 直接显示全量应用卡片 overview（不再 favorites 空态）
+      // 首页 Tab → 直接显示全量系统卡片 overview（不再 favorites 空态）
       onViewChange('overview')
     } else if (id === 'apps') {
-      // 应用页 - 待开发 TBD
-      onShowTBD?.('「应用」功能开发中，敬请期待')
+      // 系统 Tab → 进入系统管理页（与 PC 端一致）
+      onViewChange('system')
     } else if (id === 'board') {
-      // 看板页 - 待开发 TBD
-      onShowTBD?.('「看板」功能开发中，敬请期待')
+      // 看板页 - 对应 PC 端「数据看板」，待开发 TBD
+      onShowTBD?.('「数据看板」功能开发中，敬请期待')
     } else if (id === 'mine') {
       onMine ? onMine() : onViewChange('mine')
     }
@@ -135,7 +136,7 @@ export default function BottomTabBar({
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="搜索应用、服务、系统…"
+                  placeholder="搜索系统、服务、工具…"
                   value={search}
                   onChange={(e) => onSearchChange?.(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-2xl border-0 text-sm focus:outline-none focus:ring-2 transition-all"
@@ -145,7 +146,7 @@ export default function BottomTabBar({
                     // @ts-ignore
                     '--tw-ring-color': 'var(--t-accent-500)',
                   } as React.CSSProperties}
-                  aria-label="搜索应用"
+                  aria-label="搜索系统"
                 />
               </div>
               <button
@@ -237,7 +238,7 @@ export default function BottomTabBar({
           <ul className="flex items-stretch justify-around py-1.5 px-2">
             {TABS.map((tab) => {
               const active = activeId === tab.id
-              const isTBD = tab.id === 'apps' || tab.id === 'board'
+              const isTBD = tab.id === 'board'
               return (
                 <li key={tab.id} className="flex-1 flex justify-center">
                   <button

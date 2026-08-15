@@ -310,9 +310,9 @@ export default function PortalCardItem({ card, isFavorite, onToggleFavorite, onV
               }}
               onMouseEnter={(e) => { if (!isFavorite) e.currentTarget.style.color = 'var(--t-text-sub)' }}
               onMouseLeave={(e) => { if (!isFavorite) e.currentTarget.style.color = 'var(--t-text-mute)' }}
-              title={isFavorite ? '取消收藏' : '收藏该应用'}
+              title={isFavorite ? '取消收藏' : '收藏该系统'}
               aria-pressed={!!isFavorite}
-              aria-label={isFavorite ? '取消收藏' : '收藏该应用'}
+              aria-label={isFavorite ? '取消收藏' : '收藏该系统'}
             >
               <svg
                 className="w-4 h-4"
