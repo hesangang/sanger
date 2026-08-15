@@ -10,6 +10,9 @@ interface BottomTabBarProps {
   onShowTBD?: (msg: string) => void
   search?: string
   onSearchChange?: (v: string) => void
+  hideGlobalSearch?: boolean
+  searchPlaceholder?: string
+  searchHints?: string[]
 }
 
 const TABS: {
@@ -28,7 +31,7 @@ const TABS: {
   },
   {
     id: 'apps',
-    label: '系统',
+    label: '管理',
     icon: (active) => (
       <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -57,7 +60,9 @@ const TABS: {
 
 export default function BottomTabBar({
   view, onViewChange, onMine, onShowTBD,
-  search = '', onSearchChange,
+  search = '', onSearchChange, hideGlobalSearch = false,
+  searchPlaceholder = '搜索系统、名称、功能…',
+  searchHints = [],
 }: BottomTabBarProps) {
   const [expanded, setExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -91,7 +96,7 @@ export default function BottomTabBar({
       // 首页 Tab → 直接显示全量系统卡片 overview（不再 favorites 空态）
       onViewChange('overview')
     } else if (id === 'apps') {
-      // 系统 Tab → 进入系统管理页（与 PC 端一致）
+      // 管理 Tab → 进入管理中心（与 PC 端一致）
       onViewChange('system')
     } else if (id === 'board') {
       // 看板页 - 对应 PC 端「数据看板」，待开发 TBD
@@ -103,30 +108,65 @@ export default function BottomTabBar({
 
   return (
     <>
-      {/* iPhone 风格搜索：点击展开 —— 搜索区域占据屏幕 1/2（不再 33vh 留白过大） */}
+      {/* iPhone 风格搜索：展开态 —— 推介内容（建议词列表）在上，可点击作为主内容；输入框贴底部，键盘弹起时自动把它顶到键盘上方 */}
       {expanded && (
         <div
           className="sm:hidden fixed inset-0 z-[60] flex flex-col"
-          style={{
-            backgroundColor: 'var(--t-bg)',
-          }}
+          style={{ backgroundColor: 'var(--t-bg)' }}
           onClick={() => setExpanded(false)}
         >
-          {/* 顶部安全区 ~8vh 留白，搜索栏落在屏幕 1/4 ~ 1/2 之间居中 */}
-          <div className="flex-shrink-0" style={{ height: '12vh', minHeight: '64px' }} aria-hidden />
-          <div className="flex-shrink-0 px-4" onClick={(e) => e.stopPropagation()}>
-            {/* 搜索栏：返回 + 输入 + 取消 */}
-            <div className="flex items-center gap-2 mb-3">
-              <button
-                onClick={() => setExpanded(false)}
-                className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors"
-                style={{ color: 'var(--t-accent-500)' }}
-                aria-label="返回"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
+          {/* 顶部：状态栏/安全区留白 + 取消按钮，避免刘海遮挡内容 */}
+          <div className="flex-shrink-0 px-4 pt-2 flex items-center justify-end"
+            style={{ paddingTop: 'env(safe-area-inset-top, 12px)', minHeight: '52px' }}
+            onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => { onSearchChange?.(''); setExpanded(false) }}
+              className="text-sm font-semibold px-2.5 py-1.5 rounded-xl transition-colors flex-shrink-0"
+              style={{ color: 'var(--t-accent-500)' }}
+            >
+              取消
+            </button>
+          </div>
+
+          {/* 中部：搜索推介词（主内容），以列表形式作为可点击"背景"，占据全部上方空间 */}
+          <div className="flex-1 min-h-0 px-4 pt-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <ul className="space-y-1.5 pb-4">
+              {(searchHints.length > 0
+                ? searchHints.filter(k => !search.trim() || k.toLowerCase().includes(search.toLowerCase()))
+                : [
+                  'Jenkins 流水线', 'Grafana 监控', 'Kubernetes 集群', 'ClickHouse 分析', 'GitLab 仓库',
+                ].filter(k => !search.trim() || k.toLowerCase().includes(search.toLowerCase()))
+              ).map((hint) => (
+                <li key={hint}>
+                  <button
+                    onClick={() => { onSearchChange?.(hint); setExpanded(false) }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors active:bg-[var(--t-elev)]"
+                    style={{ backgroundColor: 'var(--t-card)' }}
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--t-text-mute)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span className="text-sm truncate flex-1" style={{ color: 'var(--t-text-main)' }}>{hint}</span>
+                    <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--t-text-mute)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 底部：搜索输入框贴底，键盘弹起时自动被顶在键盘上方（iOS/Android 浏览器会压缩 fixed inset-0 的底部空间） */}
+          <div className="flex-shrink-0 px-4 pt-2 pb-3"
+            style={{
+              paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+              borderTop: '1px solid var(--t-border-sub)',
+              backgroundColor: 'var(--t-bg)',
+              backdropFilter: 'saturate(140%) blur(8px)',
+              WebkitBackdropFilter: 'saturate(140%) blur(8px)',
+            }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
               <div className="flex-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style={{ color: 'var(--t-text-mute)' }}>
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -136,7 +176,7 @@ export default function BottomTabBar({
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="搜索系统、服务、工具…"
+                  placeholder={searchPlaceholder}
                   value={search}
                   onChange={(e) => onSearchChange?.(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-2xl border-0 text-sm focus:outline-none focus:ring-2 transition-all"
@@ -146,48 +186,20 @@ export default function BottomTabBar({
                     // @ts-ignore
                     '--tw-ring-color': 'var(--t-accent-500)',
                   } as React.CSSProperties}
-                  aria-label="搜索系统"
+                  aria-label="搜索"
                 />
               </div>
               <button
-                onClick={() => {
-                  onSearchChange?.('')
-                  setExpanded(false)
-                }}
-                className="text-sm font-semibold px-2 py-1.5 rounded-xl transition-colors"
+                onClick={() => setExpanded(false)}
+                className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors flex-shrink-0"
                 style={{ color: 'var(--t-accent-500)' }}
-              >
-                取消
+                aria-label="收起搜索">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5v14" />
+                </svg>
               </button>
             </div>
-            {/* 搜索关键词提示（最多展示 4 条，控制总高度） */}
-            <ul className="space-y-1.5 max-h-[46vh] overflow-auto">
-              {['Jenkins 流水线', 'Grafana 监控', 'Kubernetes 集群', 'ClickHouse 分析', 'GitLab 仓库']
-                .filter(k => !search.trim() || k.toLowerCase().includes(search.toLowerCase()))
-                .map((hint) => (
-                  <li key={hint}>
-                    <button
-                      onClick={() => {
-                        onSearchChange?.(hint)
-                        setExpanded(false)
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors active:bg-[var(--t-elev)]"
-                      style={{ backgroundColor: 'var(--t-card)' }}
-                    >
-                      <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--t-text-mute)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      <span className="text-sm truncate" style={{ color: 'var(--t-text-main)' }}>{hint}</span>
-                      <svg className="w-4 h-4 ml-auto flex-shrink-0" style={{ color: 'var(--t-text-mute)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                      </svg>
-                    </button>
-                  </li>
-                ))}
-            </ul>
           </div>
-          {/* 下方留白保持自然背景 */}
-          <div className="flex-1 min-h-0" aria-hidden />
         </div>
       )}
 
@@ -195,8 +207,8 @@ export default function BottomTabBar({
         aria-label="底部导航"
         className="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex flex-col"
       >
-        {/* 小搜索框（点击放大）—— 仅在非「我的」视图显示；宽度屏幕 1/2 居中 */}
-        {view !== 'mine' && (
+        {/* 小搜索框（点击放大）—— 仅在非「我的」视图 & 未进入管理功能子页时显示；宽度屏幕 1/2 居中 */}
+        {view !== 'mine' && !hideGlobalSearch && (
           <div className="w-full flex justify-center pb-2">
             <button
               onClick={() => setExpanded(true)}

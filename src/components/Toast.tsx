@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 export interface ToastItem {
   id: number
   message: string
-  type?: 'success' | 'info' | 'warn'
+  type?: 'success' | 'info' | 'warn' | 'error'
 }
 
 interface ToastProps {
@@ -29,6 +29,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: num
 
   const gradient =
     toast.type === 'warn'   ? 'linear-gradient(135deg, #FCD34D, #F59E0B)' :
+    toast.type === 'error'  ? 'linear-gradient(135deg, #FCA5A5, #DC2626)' :
     toast.type === 'info'   ? 'linear-gradient(135deg, #60A5FA, #2563EB)' :
                               'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))'
 
@@ -48,6 +49,10 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: num
       >
         {toast.type === 'warn' ? (
           <span className="text-base font-bold leading-none">!</span>
+        ) : toast.type === 'error' ? (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+          </svg>
         ) : toast.type === 'info' ? (
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />

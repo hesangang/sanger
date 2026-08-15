@@ -56,7 +56,7 @@ export interface RoleItem {
   createdAt: string
 }
 
-export type ToastFn = (msg: string, type?: 'success' | 'error' | 'info') => void
+export type ToastFn = (msg: string, type?: 'success' | 'error' | 'info' | 'warn') => void
 
 export const INITIAL_ORG: OrgNode[] = [
   { id: 'o1', code: 'G001', name: '集团总部', type: '集团', lead: '张伟', parent: null, children: [
@@ -102,7 +102,7 @@ export const INITIAL_USERS: UserItem[] = [
 
 export const INITIAL_MENUS: MenuItem[] = [
   { id: 'm1', code: 'M001', name: '首页', type: '菜单', parent: null, path: '/console', icon: '📊', sort: 1, status: '启用', perm: 'console:view', children: [] },
-  { id: 'm2', code: 'M002', name: '系统管理', type: '目录', parent: null, path: '/system', icon: '⚙️', sort: 2, status: '启用', perm: 'system', children: [
+  { id: 'm2', code: 'M002', name: '管理中心', type: '目录', parent: null, path: '/system', icon: '⚙️', sort: 2, status: '启用', perm: 'system', children: [
     { id: 'm3', code: 'M003', name: '组织管理', type: '菜单', parent: 'm2', path: '/system/org', icon: '🏗️', sort: 1, status: '启用', perm: 'system:org', children: [
       { id: 'm3a', code: 'M003A', name: '组织新增', type: '按钮', parent: 'm3', path: '', icon: '', sort: 1, status: '启用', perm: 'system:org:add', children: [] },
       { id: 'm3b', code: 'M003B', name: '组织编辑', type: '按钮', parent: 'm3', path: '', icon: '', sort: 2, status: '启用', perm: 'system:org:edit', children: [] },
@@ -175,3 +175,53 @@ export function pushToastLocal(toasts: { id: number; message: string; type: stri
   setToasts([...toasts, { id, message, type }])
   setTimeout(() => setToasts((p: any) => p.filter((t: any) => t.id !== id)), 3000)
 }
+
+export type SystemAppKey = 'org' | 'position' | 'user' | 'menu' | 'role' | 'app_list' | 'app_category' | 'login_log' | 'op_log'
+
+export interface SystemAppItem {
+  key: SystemAppKey
+  name: string
+  icon: string
+  badge?: string
+  tbd?: boolean
+}
+
+export interface SystemAppCategory {
+  id: string
+  label: string
+  color: string
+  apps: SystemAppItem[]
+}
+
+export const SYSTEM_APP_CATEGORIES: SystemAppCategory[] = [
+  {
+    id: 'user',
+    label: '组织人事',
+    color: '#4f6ef7',
+    apps: [
+      { key: 'org',      name: '组织管理', icon: '🏢' },
+      { key: 'position', name: '岗位管理', icon: '💼' },
+      { key: 'user',     name: '用户管理', icon: '👥' },
+      { key: 'role',     name: '角色管理', icon: '🛡️' },
+    ],
+  },
+  {
+    id: 'system',
+    label: '系统配置',
+    color: '#8b5cf6',
+    apps: [
+      { key: 'menu', name: '菜单管理', icon: '📑' },
+      { key: 'app_list',     name: '应用列表', icon: '🧩', badge: '新', tbd: true },
+      { key: 'app_category', name: '分类管理', icon: '🏷️', tbd: true },
+    ],
+  },
+  {
+    id: 'log',
+    label: '日志审计',
+    color: '#f59e0b',
+    apps: [
+      { key: 'login_log', name: '登录日志', icon: '📝', tbd: true },
+      { key: 'op_log',    name: '操作日志', icon: '📊', tbd: true },
+    ],
+  },
+]

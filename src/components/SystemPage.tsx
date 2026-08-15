@@ -38,7 +38,7 @@ export default function SystemPage() {
   const [roles, setRoles] = useState<RoleItem[]>(INITIAL_ROLES)
   const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([])
 
-  const toast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const toast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warn' = 'info') => {
     const id = Date.now() + Math.random()
     setToasts(prev => [...prev, { id, message, type }])
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000)

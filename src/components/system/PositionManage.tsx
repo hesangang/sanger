@@ -36,22 +36,21 @@ export default function PositionManage({ orgs, positions, setPositions, toast }:
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--t-border-sub)', backgroundColor: 'var(--t-card)' }}>
-        <div className="px-5 py-4 flex items-center justify-between border-b flex-wrap gap-3" style={{ borderColor: 'var(--t-border-sub)' }}>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-base font-semibold" style={{ color: 'var(--t-text-main)' }}>💼 岗位管理</h3>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-sm" style={{ backgroundColor: 'var(--t-bg)', borderColor: 'var(--t-border-sub)' }}>
-              <span style={{ color: 'var(--t-text-mute)' }}>🔍</span>
-              <input type="text" placeholder="搜索岗位名称..." value={search} onChange={e => setSearch(e.target.value)}
-                className="bg-transparent outline-none w-44" style={{ color: 'var(--t-text-main)' }} />
-            </div>
+        <div className="px-4 md:px-5 py-2.5 md:py-3 flex flex-row items-center justify-between gap-2.5 border-b" style={{ borderColor: 'var(--t-border-sub)' }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs md:text-sm flex-1 min-w-0" style={{ backgroundColor: 'var(--t-bg)', borderColor: 'var(--t-border-sub)' }}>
+            <span className="flex-shrink-0" style={{ color: 'var(--t-text-mute)' }}>🔍</span>
+            <input type="text" placeholder="搜索岗位..." value={search} onChange={e => setSearch(e.target.value)}
+              className="bg-transparent outline-none flex-1 min-w-0 w-full" style={{ color: 'var(--t-text-main)' }} />
           </div>
-          <button className="px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5"
+          <button className="flex-shrink-0 px-2.5 py-1.5 md:px-4 md:py-2 rounded-xl text-[11px] md:text-sm font-semibold text-white shadow-lg transition-all active:scale-[0.99] whitespace-nowrap"
             style={{ background: 'linear-gradient(135deg, var(--t-accent-400), var(--t-accent-600))', boxShadow: `0 10px 24px -12px color-mix(in srgb, var(--t-accent-500) 60%, transparent)` }}
-            onClick={() => { setForm({ name: '', level: 'M1', org: allOrgs[0]?.id || '', desc: '' }); setShowModal(true) }}>＋ 新增岗位</button>
+            onClick={() => { setForm({ name: '', level: 'M1', org: allOrgs[0]?.id || '', desc: '' }); setShowModal(true) }}>＋ 新增</button>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* PC：表格 */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr style={{ backgroundColor: 'var(--t-bg)' }}>
               {['岗位编码', '岗位名称', '级别', '所属组织', '状态', '操作'].map(h => (
@@ -77,12 +76,47 @@ export default function PositionManage({ orgs, positions, setPositions, toast }:
             </tbody>
           </table>
         </div>
+
+        {/* APP：卡片列表 */}
+        <div className="md:hidden divide-y" style={{ borderColor: 'var(--t-border-sub)' }}>
+          {filtered.length === 0 ? (
+            <div className="text-center py-10 text-xs" style={{ color: 'var(--t-text-mute)' }}>暂无匹配的岗位</div>
+          ) : filtered.map(p => {
+            const org = getOrgById(orgs, p.org)
+            const lc = LEVEL_COLORS[p.level] || '#999'
+            return (
+              <div key={p.id} className="p-3.5 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                  style={{ backgroundColor: `${lc}1A`, color: lc }}>💼</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[14px] font-semibold truncate" style={{ color: 'var(--t-text-main)' }}>{p.name}</span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0"
+                      style={{ backgroundColor: `${lc}22`, color: lc }}>{p.level}</span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0"
+                      style={{ backgroundColor: p.status === '启用' ? 'rgba(16,185,129,0.12)' : 'rgba(156,163,175,0.12)', color: p.status === '启用' ? '#10b981' : '#6b7280' }}>{p.status}</span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-[11px] flex-wrap" style={{ color: 'var(--t-text-sub)' }}>
+                    <code>{p.code}</code>
+                    <span>·</span>
+                    <span>{org?.name || '-'}</span>
+                  </div>
+                  {p.desc && p.desc !== '暂无描述' && (
+                    <div className="mt-1 text-[11px] line-clamp-1" style={{ color: 'var(--t-text-mute)' }}>{p.desc}</div>
+                  )}
+                </div>
+                <button className="text-[11px] px-2 py-1 rounded-lg flex-shrink-0"
+                  style={{ color: 'var(--t-accent-500)' }} onClick={() => toast(`编辑岗位：${p.name}`, 'info')}>编辑</button>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {showModal && (
         <Modal title="新增岗位" onClose={() => setShowModal(false)} onSave={save}>
           <Field label="岗位名称" required><Input value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="请输入岗位名称" /></Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field label="岗位级别">
               <select value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))} className="input-base">
                 {['P1', 'P2', 'P3', 'P4', 'P5', 'M1（经理）', 'M2（高级经理）', 'M3（总监）'].map(l => { const v = l.split('（')[0]; return <option key={v} value={v}>{l}</option> })}

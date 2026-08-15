@@ -10,6 +10,18 @@ import PortalCardItem from './components/PortalCardItem'
 import Toast, { type ToastItem } from './components/Toast'
 import { useFavorites } from './hooks/useFavorites'
 import { useRecentVisit } from './hooks/useRecentVisit'
+import {
+  INITIAL_ORG, INITIAL_POSITIONS, INITIAL_USERS, INITIAL_MENUS, INITIAL_ROLES,
+  SYSTEM_APP_CATEGORIES,
+} from './components/system/systemData'
+import type {
+  OrgNode, Position, UserItem, MenuItem, RoleItem, SystemAppKey,
+} from './components/system/systemData'
+import OrgManage from './components/system/OrgManage'
+import PositionManage from './components/system/PositionManage'
+import UserManage from './components/system/UserManage'
+import MenuManage from './components/system/MenuManage'
+import RoleManage from './components/system/RoleManage'
 
 export type Mode = 'light' | 'dark'
 export type ViewMode = 'overview' | 'favorites' | 'recent' | 'mine' | 'system'
@@ -51,6 +63,14 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastItem[]>([])
   // 移动端分区展开状态：key=region.id，true=展开全部，false/undefined=默认最多 8 个
   const [expandedRegions, setExpandedRegions] = useState<Record<string, boolean>>({})
+  // APP 端系统模块：subView 为空显示分类网格，否则进入对应功能页
+  const [systemSubView, setSystemSubView] = useState<SystemAppKey | null>(null)
+  // APP 端系统模块共享状态
+  const [sysOrgs, setSysOrgs] = useState<OrgNode[]>(INITIAL_ORG)
+  const [sysPositions, setSysPositions] = useState<Position[]>(INITIAL_POSITIONS)
+  const [sysUsers, setSysUsers] = useState<UserItem[]>(INITIAL_USERS)
+  const [sysMenus] = useState<MenuItem[]>(INITIAL_MENUS)
+  const [sysRoles, setSysRoles] = useState<RoleItem[]>(INITIAL_ROLES)
 
   const toggleRegion = (rid: string) =>
     setExpandedRegions(prev => ({ ...prev, [rid]: !prev[rid] }))
@@ -174,6 +194,8 @@ export default function App() {
 
   const handleViewChange = (v: ViewMode) => {
     setView(v)
+    // 切出系统模块时重置内部子页，下次进入从分类网格开始
+    if (v !== 'system') setSystemSubView(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -196,6 +218,26 @@ export default function App() {
     if (view === 'favorites' || view === 'recent') setView('overview')
     else setView('favorites')
   }
+
+  // APP 端首页 / 管理主页：底部搜索的占位符与关键词提示严格对应页面应用名称
+  const isSystemHome = view === 'system' && !systemSubView
+  const searchPlaceholder: string = isSystemHome
+    ? '搜索管理功能（如 组织管理、用户管理…）'
+    : '搜索系统应用（如 Jenkins、Grafana、GitLab…）'
+  const searchHints: string[] = useMemo(() => {
+    if (isSystemHome) {
+      return SYSTEM_APP_CATEGORIES.flatMap(c => c.apps).map(a => a.name).slice(0, 8)
+    }
+    // 首页：overview/favorites/recent 均显示当前视图的应用名称（最多 8 个）
+    const names: string[] = []
+    const seen = new Set<string>()
+    for (const c of viewSource) {
+      const t = c.title.trim()
+      if (!seen.has(t)) { seen.add(t); names.push(t) }
+      if (names.length >= 8) break
+    }
+    return names
+  }, [isSystemHome, viewSource])
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--t-bg)' }}>
@@ -220,7 +262,105 @@ export default function App() {
             onChangeAccent={setAccent}
           />
         ) : view === 'system' ? (
-          <SystemPage />
+          <>
+            {/* PC 端（sm+）：完整 SystemPage 左侧二级菜单布局 */}
+            <div className="hidden md:block">
+              <SystemPage />
+            </div>
+            {/* APP 端（<md）：一级分类 + 二级图标网格；subView 非空时进入对应功能页 */}
+            <div className="md:hidden">
+              {!systemSubView ? (
+                <div className="space-y-5 pt-1">
+                  {/* 分类网格（与首页 regions 结构一致） */}
+                  {SYSTEM_APP_CATEGORIES.map(cat => (
+                    <section key={cat.id} className="space-y-2.5">
+                      <div className="flex items-center gap-2.5 px-0.5">
+                        <span className="w-1 h-5 rounded-full" aria-hidden style={{ background: `linear-gradient(180deg, ${cat.color}, ${cat.color}aa)` }} />
+                        <h4 className="text-[15px] font-bold tracking-tight" style={{ color: 'var(--t-text-main)' }}>{cat.label}</h4>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold" style={{
+                          backgroundColor: `${cat.color}1f`,
+                          color: cat.color,
+                        }}>{cat.apps.length}</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-x-2 gap-y-3">
+                        {cat.apps.map(app => {
+                          const name = app.name.slice(0, 6)
+                          return (
+                            <button
+                              key={app.key}
+                              onClick={() => {
+                                if (app.tbd) { pushToast(`「${app.name}」功能开发中，敬请期待`, 'info'); return }
+                                setSystemSubView(app.key)
+                              }}
+                              className="flex flex-col items-center gap-1.5 group relative"
+                            >
+                              <div className="relative w-[60px] h-[60px] rounded-2xl flex items-center justify-center text-[28px] transition-all shadow-md group-active:scale-95"
+                                style={{
+                                  background: `linear-gradient(145deg, ${cat.color}2E, ${cat.color}12 55%, ${cat.color}08)`,
+                                  border: `1px solid ${cat.color}33`,
+                                  boxShadow: `0 12px 26px -16px ${cat.color}99, inset 0 1px 0 rgba(255,255,255,0.35)`,
+                                }}>
+                                {app.badge && (
+                                  <span className="absolute -top-1.5 -right-1.5 text-[9px] font-black px-1.5 py-0.5 rounded-lg shadow-sm" style={{
+                                    background: 'linear-gradient(135deg,#F59E0B,#EA580C)', color: '#fff',
+                                  }}>{app.badge}</span>
+                                )}
+                                {app.tbd && (
+                                  <span className="absolute bottom-0.5 right-0.5 text-[8px] font-bold px-1 py-0.5 rounded" style={{
+                                    backgroundColor: 'rgba(156,163,175,0.9)', color: '#fff',
+                                  }}>TBD</span>
+                                )}
+                                <span className="drop-shadow-[0_2px_3px_rgba(0,0,0,0.18)]">{app.icon}</span>
+                              </div>
+                              <span className="text-[11px] font-medium leading-tight text-center" style={{
+                                color: 'var(--t-text-main)',
+                                maxWidth: '72px',
+                              }}>{name}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <div className="pt-2">
+                  {/* 功能页：返回栏 + 对应组件（二级名称在前，一级分类在后合并一行，节省纵向空间） */}
+                  <div className="flex items-center gap-2 mb-3 px-0.5">
+                    <button onClick={() => setSystemSubView(null)}
+                      className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors active:bg-[var(--t-bg)]"
+                      style={{ color: 'var(--t-accent-500)' }} aria-label="返回">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <div className="flex items-baseline gap-1.5 flex-1 min-w-0">
+                      <div className="text-base font-bold truncate flex-shrink-0" style={{ color: 'var(--t-text-main)' }}>
+                        {(() => {
+                          for (const c of SYSTEM_APP_CATEGORIES) {
+                            const a = c.apps.find(x => x.key === systemSubView)
+                            if (a) return a.name
+                          }
+                          return ''
+                        })()}
+                      </div>
+                      <span className="text-[11px] truncate" style={{ color: 'var(--t-text-sub)' }}>· {(() => {
+                        for (const c of SYSTEM_APP_CATEGORIES) {
+                          if (c.apps.some(x => x.key === systemSubView)) return c.label
+                        }
+                        return ''
+                      })()}</span>
+                    </div>
+                  </div>
+                  {systemSubView === 'org'      && <OrgManage     orgs={sysOrgs} setOrgs={setSysOrgs} positions={sysPositions} users={sysUsers} toast={pushToast} />}
+                  {systemSubView === 'position' && <PositionManage orgs={sysOrgs} positions={sysPositions} setPositions={setSysPositions} toast={pushToast} />}
+                  {systemSubView === 'user'     && <UserManage     orgs={sysOrgs} positions={sysPositions} users={sysUsers} setUsers={setSysUsers} toast={pushToast} />}
+                  {systemSubView === 'menu'     && <MenuManage     menus={sysMenus} setMenus={() => {}} toast={pushToast} />}
+                  {systemSubView === 'role'     && <RoleManage     roles={sysRoles} setRoles={setSysRoles} menus={sysMenus} toast={pushToast} />}
+                </div>
+              )}
+            </div>
+          </>
         ) : (
           /* 系统视图（搜索 / 收藏 / 最近 / 全部分类） */
           search.trim() && displayCards.length === 0 ? (
@@ -429,6 +569,9 @@ export default function App() {
         search={search}
         onSearchChange={setSearch}
         onShowTBD={(msg) => pushToast(msg, 'warn')}
+        hideGlobalSearch={view === 'system' && !!systemSubView}
+        searchPlaceholder={searchPlaceholder}
+        searchHints={searchHints}
       />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>
