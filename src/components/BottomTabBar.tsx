@@ -339,7 +339,7 @@ export default function BottomTabBar({
                     <span className="w-1 h-3.5 rounded-full" aria-hidden
                       style={{ background: 'linear-gradient(180deg, var(--t-accent-400), var(--t-accent-600))' }} />
                     <h4 className="text-[13px] font-bold tracking-tight" style={{ color: 'var(--t-text-main)' }}>
-                      Siri 建议
+                      Sger 建议
                     </h4>
                   </div>
                 )}
@@ -408,7 +408,7 @@ export default function BottomTabBar({
                   placeholder={searchPlaceholder}
                   value={search}
                   onChange={(e) => onSearchChange?.(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl border-0 text-sm focus:outline-none focus:ring-2 transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-2xl border-0 text-sm focus:outline-none focus:ring-2 transition-all"
                   style={{
                     backgroundColor: 'var(--t-card)',
                     color: 'var(--t-text-main)',
@@ -421,6 +421,22 @@ export default function BottomTabBar({
                   autoCapitalize="off"
                   spellCheck={false}
                 />
+                {search && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onSearchChange?.('')
+                      setTimeout(() => inputRef.current?.focus(), 0)
+                    }}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center justify-center"
+                    style={{ color: 'var(--t-text-mute)' }}
+                    aria-label="清空"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
               <button
                 onClick={() => setExpanded(false)}
@@ -444,7 +460,12 @@ export default function BottomTabBar({
         {view !== 'mine' && !hideGlobalSearch && (
           <div className="w-full flex justify-center pb-2">
             <button
-              onClick={() => setExpanded(true)}
+              onClick={() => {
+                setExpanded(true)
+                setTimeout(() => {
+                  inputRef.current?.focus()
+                }, 50)
+              }}
               className="flex items-center gap-2.5 px-4 py-2.5 rounded-full border shadow-lg transition-all active:scale-[0.99]"
               style={{
                 width: '50vw',
