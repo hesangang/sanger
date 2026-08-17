@@ -6,18 +6,14 @@ import MenuManage from './system/MenuManage'
 import RoleManage from './system/RoleManage'
 import {
   INITIAL_ORG, INITIAL_POSITIONS, INITIAL_USERS, INITIAL_MENUS, INITIAL_ROLES,
-} from './system/systemData'
-import type { OrgNode, Position, UserItem, MenuItem, RoleItem } from './system/systemData'
-
-type ContentKey = 'org' | 'position' | 'user' | 'menu' | 'role'
-
-const MENU_ID_TO_CONTENT: Record<string, ContentKey> = {
-  m3:  'org',
-  m4:  'position',
-  m5:  'user',
-  m6:  'menu',
-  m7:  'role',
-}
+  MENU_ID_TO_CONTENT,
+  CONTENT_JUMP_MAP,
+  MOBILE_SYSTEM_TABS,
+  INITIAL_DIR_EXPANDED,
+  DEFAULT_ACTIVE_MENU,
+  DEFAULT_CONTENT_KEY,
+} from '../data/SystemPage'
+import type { OrgNode, Position, UserItem, MenuItem, RoleItem, ContentKey } from '../data/SystemPage'
 
 function filterEnabledMenus(list: MenuItem[]): MenuItem[] {
   return list
@@ -26,9 +22,9 @@ function filterEnabledMenus(list: MenuItem[]): MenuItem[] {
 }
 
 export default function SystemPage() {
-  const [contentKey, setContentKey] = useState<ContentKey>('org')
-  const [activeMenuId, setActiveMenuId] = useState<string>('m3')
-  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set(['m2']))
+  const [contentKey, setContentKey] = useState<ContentKey>(DEFAULT_CONTENT_KEY)
+  const [activeMenuId, setActiveMenuId] = useState<string>(DEFAULT_ACTIVE_MENU)
+  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set(INITIAL_DIR_EXPANDED))
   const [orgs, setOrgs] = useState<OrgNode[]>(INITIAL_ORG)
   const [positions, setPositions] = useState<Position[]>(INITIAL_POSITIONS)
   const [users, setUsers] = useState<UserItem[]>(INITIAL_USERS)
@@ -45,18 +41,11 @@ export default function SystemPage() {
   }, [])
 
   const handleJump = (key: string) => {
-    const map: Record<string, [ContentKey, string]> = {
-      org:       ['org',       'm3'],
-      position:  ['position',  'm4'],
-      user:      ['user',      'm5'],
-      menu:      ['menu',      'm6'],
-      role:      ['role',      'm7'],
-    }
-    const entry = map[key]
+    const entry = CONTENT_JUMP_MAP[key]
     if (entry) {
       setContentKey(entry[0])
       setActiveMenuId(entry[1])
-      setExpandedDirs(prev => new Set([...prev, 'm2']))
+      setExpandedDirs(prev => new Set([...prev, ...INITIAL_DIR_EXPANDED]))
     }
   }
 
@@ -85,9 +74,7 @@ export default function SystemPage() {
 
   return (
     <div>
-      {/* 主体：左侧二级菜单 + 右侧内容区 */}
       <div className="flex gap-4 items-start">
-        {/* 左侧二级菜单 */}
         <aside className="w-[220px] lg:w-[235px] flex-shrink-0 hidden md:block sticky top-2">
           <nav className="rounded-2xl border p-2" style={{ borderColor: 'var(--t-border-sub)', backgroundColor: 'var(--t-card)' }}>
             <div className="space-y-0.5 py-1">
@@ -96,17 +83,10 @@ export default function SystemPage() {
           </nav>
         </aside>
 
-        {/* 移动端底部菜单 */}
         <div className="md:hidden fixed bottom-16 left-2 right-2 z-40 rounded-2xl border shadow-lg p-2 overflow-x-auto scrollbar-hide flex gap-1"
              style={{ borderColor: 'var(--t-border-sub)', backgroundColor: 'var(--t-card)' }}>
-          {[
-            { k: 'org',       m: 'm3', i: '🏗️', l: '组织' },
-            { k: 'position',  m: 'm4', i: '💼', l: '岗位' },
-            { k: 'user',      m: 'm5', i: '👤', l: '用户' },
-            { k: 'menu',      m: 'm6', i: '📋', l: '菜单' },
-            { k: 'role',      m: 'm7', i: '🛡️', l: '角色' },
-          ].map(x => {
-            const isActive = contentKey === (x.k as ContentKey)
+          {MOBILE_SYSTEM_TABS.map(x => {
+            const isActive = contentKey === x.k
             return (
               <button key={x.m} onClick={handleJump.bind(null, x.k)}
                 className="flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
@@ -121,7 +101,6 @@ export default function SystemPage() {
           })}
         </div>
 
-        {/* 右侧内容区 */}
         <div className="flex-1 min-w-0 pb-24 md:pb-0">
           {contentKey === 'org' && <OrgManage orgs={orgs} setOrgs={setOrgs} positions={positions} users={users} toast={toast} />}
           {contentKey === 'position' && <PositionManage orgs={orgs} positions={positions} setPositions={setPositions} toast={toast} />}
@@ -131,7 +110,6 @@ export default function SystemPage() {
         </div>
       </div>
 
-      {/* Toast */}
       <div className="fixed top-6 right-6 z-[200] flex flex-col gap-2">
         {toasts.map(t => (
           <div key={t.id} className="px-5 py-3 rounded-xl text-sm text-white shadow-xl"
@@ -141,7 +119,6 @@ export default function SystemPage() {
         ))}
       </div>
 
-      {/* 共享样式 */}
       <style>{`
         .input-base {
           width: 100%;
@@ -209,7 +186,6 @@ function renderRootMenuItem(
         {isActive && <span className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-l-full" style={{ backgroundColor: '#fff' }} />}
       </button>
 
-      {/* 二级子菜单 */}
       {isDir && isExpanded && root.children.length > 0 && (
         <div className="ml-2 mt-0.5 mb-1 space-y-0.5 pl-2 border-l" style={{ borderColor: 'var(--t-border-sub)' }}>
           {root.children.map(child => {

@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react'
 import type { Mode } from '../App'
 import type { ViewMode } from '../App'
-import type { AccentKey } from '../data/portal'
-import { ACCENTS } from '../data/portal'
+import type { AccentKey } from '../data/PortalCardItem'
+import { ACCENTS } from '../data/PortalCardItem'
+import {
+  BRAND,
+  CURRENT_USER,
+  HEADER_TOP_NAV,
+  HEADER_SETTING_MENU,
+  HEADER_USER_MENU,
+  LOGOUT_MENU,
+  SEARCH_DESKTOP_PLACEHOLDER,
+} from '../data/Header'
 
 interface HeaderProps {
   search: string
@@ -14,13 +23,6 @@ interface HeaderProps {
   onViewChange: (v: ViewMode) => void
   view: ViewMode
 }
-
-interface TopNavItem { id: ViewMode; label: string }
-const TOP_NAV: TopNavItem[] = [
-  { id: 'overview',  label: '首页' },
-  { id: 'system',    label: '管理中心' },
-  { id: 'overview',  label: '数据看板' },
-]
 
 export default function Header({
   search, setSearch, mode, onToggleMode, accent, onChangeAccent, onViewChange, view,
@@ -69,7 +71,6 @@ export default function Header({
     >
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-4 min-w-0">
-          {/* 左侧 Logo：SG 徽章 + SanGer 文字（仅桌面端显示，移动端完全隐藏） */}
           <div className="hidden sm:flex items-center gap-2.5 flex-shrink-0">
             <div
               className="rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 relative overflow-hidden"
@@ -79,7 +80,7 @@ export default function Header({
               }}
             >
               <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle at 20% 20%, #fff 0%, transparent 50%)' }} />
-              <span className="relative text-white font-black text-[14px] leading-none tracking-tighter select-none" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>SG</span>
+              <span className="relative text-white font-black text-[14px] leading-none tracking-tighter select-none" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>{BRAND.logoBadge}</span>
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-[20px] font-black tracking-tight" style={{
@@ -89,21 +90,20 @@ export default function Header({
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
               }}>
-                SanGer
+                {BRAND.name}
               </span>
               <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{
                 background: 'linear-gradient(135deg, var(--t-accent-500), var(--t-accent-700))',
                 color: '#fff',
                 boxShadow: `0 1px 4px color-mix(in srgb, var(--t-accent-500) 30%, transparent)`,
               }}>
-                企业版
+                {BRAND.editionLabel}
               </span>
             </div>
           </div>
 
-          {/* 中间主导航 */}
           <nav className="hidden md:flex items-center gap-1 overflow-x-auto scrollbar-hide flex-shrink-0" aria-label="主导航">
-            {TOP_NAV.map((n, idx) => {
+            {HEADER_TOP_NAV.map((n, idx) => {
               const isActive = navActiveLabel === n.label
               return (
                 <button
@@ -119,14 +119,21 @@ export default function Header({
                   aria-current={isActive ? 'page' : undefined}
                 >
                   {n.label}
+                  {n.badgeLabel && (
+                    <span className="ml-1.5 text-[9px] px-1 py-px rounded font-semibold" style={{
+                      backgroundColor: 'var(--t-accent-500)',
+                      color: '#fff',
+                      opacity: 0.85,
+                    }}>
+                      {n.badgeLabel}
+                    </span>
+                  )}
                 </button>
               )
             })}
           </nav>
 
-          {/* 右侧：搜索框 / 通知 / 设置 / 头像 */}
           <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {/* 搜索框（桌面端） */}
             <div className="relative block">
               <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none" style={{ color: 'var(--t-text-mute)' }}>
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -135,7 +142,7 @@ export default function Header({
               </div>
               <input
                 type="text"
-                placeholder={search ? '' : '搜索系统、名称、标签…'}
+                placeholder={search ? '' : SEARCH_DESKTOP_PLACEHOLDER}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8 pr-3 py-1.5 text-sm rounded-xl border focus:outline-none focus:ring-2 transition-all w-44 lg:w-64"
@@ -163,10 +170,15 @@ export default function Header({
               <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0" />
               </svg>
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--t-status-ok)' }} />
+              {CURRENT_USER.unreadNotice ? (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center" style={{ backgroundColor: 'var(--t-status-error)', color: '#fff' }}>
+                  {CURRENT_USER.unreadNotice}
+                </span>
+              ) : (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--t-status-ok)' }} />
+              )}
             </button>
 
-            {/* 设置按钮（内含主题色 + 亮暗切换 + 其他入口） */}
             <div className="relative">
               <button
                 onClick={() => { setShowSettings(!showSettings); setShowUserMenu(false) }}
@@ -274,12 +286,7 @@ export default function Header({
                     <div className="h-px mx-3 my-1" style={{ backgroundColor: 'var(--t-border-sub)' }} />
 
                     <div className="px-1.5 py-1" role="none">
-                      {[
-                        { icon: '🔔', label: '通知设置' },
-                        { icon: '👥', label: '成员与权限' },
-                        { icon: '🔐', label: '安全策略' },
-                        { icon: '❓', label: '帮助与反馈' },
-                      ].map(item => (
+                      {HEADER_SETTING_MENU.map(item => (
                         <button
                           key={item.label}
                           role="menuitem"
@@ -301,7 +308,6 @@ export default function Header({
               )}
             </div>
 
-            {/* 头像：「三」+ 用户下拉菜单（可点击查看） */}
             <div className="relative ml-0.5">
               <button
                 onClick={() => { setShowUserMenu(!showUserMenu); setShowSettings(false) }}
@@ -309,12 +315,12 @@ export default function Header({
                 style={{
                   background: 'linear-gradient(135deg, var(--t-accent-400) 0%, var(--t-accent-600) 100%)',
                 }}
-                title="管理员"
+                title={CURRENT_USER.title}
                 aria-label="用户菜单"
                 aria-haspopup="menu"
                 aria-expanded={showUserMenu}
               >
-                三
+                {CURRENT_USER.avatarChar}
               </button>
               {showUserMenu && (
                 <>
@@ -324,7 +330,6 @@ export default function Header({
                     className="absolute right-0 top-12 z-50 rounded-2xl border shadow-2xl py-1.5 w-60"
                     style={{ backgroundColor: 'var(--t-card)', borderColor: 'var(--t-border-main)' }}
                   >
-                    {/* 用户卡片头部 */}
                     <div className="px-3 pt-2 pb-3 flex items-center gap-2.5">
                       <div
                         className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-[15px] shadow-sm flex-shrink-0"
@@ -332,23 +337,18 @@ export default function Header({
                           background: 'linear-gradient(135deg, var(--t-accent-400) 0%, var(--t-accent-600) 100%)',
                         }}
                       >
-                        三
+                        {CURRENT_USER.avatarChar}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold truncate" style={{ color: 'var(--t-text-main)' }}>三掌柜</div>
-                        <div className="text-[11px] truncate" style={{ color: 'var(--t-text-mute)' }}>超级管理员 · 三格尔科技</div>
+                        <div className="text-sm font-semibold truncate" style={{ color: 'var(--t-text-main)' }}>{CURRENT_USER.displayName}</div>
+                        <div className="text-[11px] truncate" style={{ color: 'var(--t-text-mute)' }}>{CURRENT_USER.title} · {CURRENT_USER.org}</div>
                       </div>
                     </div>
 
                     <div className="h-px mx-3 my-1" style={{ backgroundColor: 'var(--t-border-sub)' }} />
 
                     <div className="px-1 py-1" role="none">
-                      {[
-                        { icon: '👤', label: '查看个人资料' },
-                        { icon: '💼', label: '我的工作台' },
-                        { icon: '🔑', label: '账号与安全' },
-                        { icon: '⚙️', label: '偏好设置' },
-                      ].map(item => (
+                      {HEADER_USER_MENU.map(item => (
                         <button
                           key={item.label}
                           role="menuitem"
@@ -373,8 +373,8 @@ export default function Header({
                         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, #E11D48 10%, transparent)' }}
                         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
                       >
-                        <span className="text-[15px] leading-none">🚪</span>
-                        <span className="flex-1 text-left font-medium">退出登录</span>
+                        <span className="text-[15px] leading-none">{LOGOUT_MENU.icon}</span>
+                        <span className="flex-1 text-left font-medium">{LOGOUT_MENU.label}</span>
                       </button>
                     </div>
                   </div>
@@ -384,7 +384,6 @@ export default function Header({
           </div>
         </div>
 
-        {/* 移动端搜索框：独占一行 */}
         <div className="sm:hidden pb-3">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none" style={{ color: 'var(--t-text-mute)' }}>
@@ -394,7 +393,7 @@ export default function Header({
             </div>
             <input
               type="text"
-              placeholder={search ? '' : '搜索系统、名称、标签…'}
+              placeholder={search ? '' : SEARCH_DESKTOP_PLACEHOLDER}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border focus:outline-none focus:ring-2 transition-all"

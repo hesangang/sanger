@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
-import type { RoleItem, MenuItem, ToastFn } from './systemData'
-import { genId, getAllMenusFlat, DATA_SCOPE_COLORS } from './systemData'
+import type { RoleItem, MenuItem, ToastFn } from '../../data/system/RoleManage'
+import { genId, getAllMenusFlat } from '../../data/system/MenuManage'
+import { DATA_SCOPE_COLORS } from '../../data/system/RoleManage'
 import { Field, Input, Modal } from './OrgManage'
 
 interface Props {

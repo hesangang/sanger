@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
-import type { OrgNode, Position, ToastFn } from './systemData'
-import { getOrgById, getAllOrgsFlat, genId, LEVEL_COLORS } from './systemData'
+import type { OrgNode, Position, ToastFn } from '../../data/system/OrgManage'
+import { getOrgById, getAllOrgsFlat, genId } from '../../data/system/OrgManage'
+import { LEVEL_COLORS } from '../../data/system/PositionManage'
 import { Field, Input, Modal } from './OrgManage'
 
 interface Props {

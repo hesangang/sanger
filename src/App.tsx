@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { regions } from './data/portal'
-import type { PortalCard, AccentKey } from './data/portal'
+import { regions, pickSpotlightCards, pickSearchHints } from './data/PortalCardItem'
+import type { PortalCard, AccentKey } from './data/PortalCardItem'
+import { getSearchPlaceholder, SPOTLIGHT_LIMIT, SEARCH_HINT_LIMIT } from './data/BottomTabBar'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import BottomTabBar from './components/BottomTabBar'
@@ -13,10 +14,11 @@ import { useRecentVisit } from './hooks/useRecentVisit'
 import {
   INITIAL_ORG, INITIAL_POSITIONS, INITIAL_USERS, INITIAL_MENUS, INITIAL_ROLES,
   SYSTEM_APP_CATEGORIES,
-} from './components/system/systemData'
+} from './data/SystemPage'
 import type {
   OrgNode, Position, UserItem, MenuItem, RoleItem, SystemAppKey,
-} from './components/system/systemData'
+  SystemAppCategory, SystemAppItem,
+} from './data/SystemPage'
 import OrgManage from './components/system/OrgManage'
 import PositionManage from './components/system/PositionManage'
 import UserManage from './components/system/UserManage'
@@ -222,39 +224,17 @@ export default function App() {
 
   // APP 端首页 / 管理主页：底部搜索的占位符与关键词提示严格对应页面应用名称
   const isSystemHome = view === 'system' && !systemSubView
-  const searchPlaceholder: string = isSystemHome
-    ? '搜索管理功能（如 组织管理、用户管理…）'
-    : '搜索系统应用（如 Jenkins、Grafana、GitLab…）'
+  const searchPlaceholder: string = getSearchPlaceholder(isSystemHome)
   const searchHints: string[] = useMemo(() => {
     if (isSystemHome) {
-      return SYSTEM_APP_CATEGORIES.flatMap(c => c.apps).map(a => a.name).slice(0, 8)
+      return SYSTEM_APP_CATEGORIES.flatMap((c: SystemAppCategory) => c.apps).map((a: SystemAppItem) => a.name).slice(0, SEARCH_HINT_LIMIT)
     }
-    // 首页：overview/favorites/recent 均显示当前视图的应用名称（最多 8 个）
-    const names: string[] = []
-    const seen = new Set<string>()
-    for (const c of viewSource) {
-      const t = c.title.trim()
-      if (!seen.has(t)) { seen.add(t); names.push(t) }
-      if (names.length >= 8) break
-    }
-    return names
+    return pickSearchHints(viewSource, SEARCH_HINT_LIMIT)
   }, [isSystemHome, viewSource])
 
-  // Spotlight「最佳搜索 / Sger 建议」：4 列 × 2 行 = 8 个应用图标网格
-  // 首页视图：收藏优先 → 最近访问 → 当前视图全量补齐；管理主页：取 8 个管理入口占位（暂不支持快捷入口）
   const spotlightApps = useMemo(() => {
     if (isSystemHome) return [] as typeof allCards
-    const result: typeof allCards = []
-    const ids = new Set<number>()
-    const push = (c: (typeof allCards)[number] | undefined) => {
-      if (!c || ids.has(c.id)) return
-      ids.add(c.id); result.push(c)
-    }
-    favoriteCards.forEach(push)
-    recentCards.forEach(push)
-    for (const c of viewSource) push(c)
-    for (const c of allCards) push(c)
-    return result.slice(0, 8)
+    return pickSpotlightCards(allCards, favoriteCards, recentCards, viewSource, SPOTLIGHT_LIMIT)
   }, [isSystemHome, favoriteCards, recentCards, viewSource, allCards])
 
   const handleOpenSpotlight = useCallback((card: PortalCard) => {
@@ -313,7 +293,7 @@ export default function App() {
                         }}>{cat.apps.length}</span>
                       </div>
                       <div className="grid grid-cols-4 gap-x-2 gap-y-3">
-                        {cat.apps.map(app => {
+                        {cat.apps.map((app: SystemAppItem) => {
                           const name = app.name.slice(0, 6)
                           return (
                             <button
@@ -376,7 +356,7 @@ export default function App() {
                       </div>
                       <span className="text-[11px] truncate" style={{ color: 'var(--t-text-sub)' }}>· {(() => {
                         for (const c of SYSTEM_APP_CATEGORIES) {
-                          if (c.apps.some(x => x.key === systemSubView)) return c.label
+                          if (c.apps.some((x: SystemAppItem) => x.key === systemSubView)) return c.label
                         }
                         return ''
                       })()}</span>

@@ -1,8 +1,45 @@
 import { useState, useEffect, useRef } from 'react'
 import type { ViewMode } from '../App'
-import type { PortalCard } from '../data/portal'
+import type { PortalCard } from '../data/PortalCardItem'
+import {
+  BOTTOM_TABS,
+  SPOTLIGHT_LABELS,
+  SEARCH_PLACEHOLDERS,
+  CAPSULE_WIDTH_VW,
+  SPOTLIGHT_LIMIT,
+  type TabId,
+} from '../data/BottomTabBar'
+import {
+  iconText,
+  simplifyTitle,
+  defaultSearchKeywords,
+} from '../data/PortalCardItem'
 
-type TabId = 'console' | 'apps' | 'board' | 'mine'
+const stroke = (active: boolean) => (active ? 0 : 1.8)
+const fill = (active: boolean) => (active ? 'currentColor' : 'none')
+
+const TAB_ICONS: Record<TabId, (active: boolean) => React.ReactNode> = {
+  console: (active) => (
+    <svg className="w-6 h-6" fill={fill(active)} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={stroke(active)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    </svg>
+  ),
+  apps: (active) => (
+    <svg className="w-6 h-6" fill={fill(active)} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={stroke(active)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+    </svg>
+  ),
+  board: (active) => (
+    <svg className="w-6 h-6" fill={fill(active)} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={stroke(active)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+    </svg>
+  ),
+  mine: (active) => (
+    <svg className="w-6 h-6" fill={fill(active)} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={stroke(active)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  ),
+}
 
 interface BottomTabBarProps {
   view: ViewMode
@@ -19,158 +56,10 @@ interface BottomTabBarProps {
   onExpandedChange?: (expanded: boolean) => void
 }
 
-const TABS: {
-  id: TabId
-  label: string
-  icon: (active: boolean) => React.ReactNode
-}[] = [
-  {
-    id: 'console',
-    label: '首页',
-    icon: (active) => (
-      <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-  },
-  {
-    id: 'apps',
-    label: '管理',
-    icon: (active) => (
-      <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'board',
-    label: '看板',
-    icon: (active) => (
-      <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-      </svg>
-    ),
-  },
-  {
-    id: 'mine',
-    label: '我的',
-    icon: (active) => (
-      <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 0 : 1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    ),
-  },
-]
-
-const categoryColor = (c: string): { bg: string; fg: string } => {
-  switch (c) {
-    case 'dev':    return { bg: 'linear-gradient(135deg,#38BDF8,#0284C7)', fg: '#0C4A6E' }
-    case 'ops':    return { bg: 'linear-gradient(135deg,#34D399,#047857)', fg: '#064E3B' }
-    case 'data':   return { bg: 'linear-gradient(135deg,#22D3EE,#0891B2)', fg: '#164E63' }
-    case 'ai':     return { bg: 'linear-gradient(135deg,#F472B6,#BE185D)', fg: '#831843' }
-    case 'cloud':  return { bg: 'linear-gradient(135deg,#818CF8,#4338CA)', fg: '#312E81' }
-    default:       return { bg: 'linear-gradient(135deg,#94A3B8,#475569)', fg: '#1E293B' }
-  }
-}
-
-const cardIdGradient = (_id: number) => {
-  const palette = [
-    'linear-gradient(135deg,#22C55E,#15803D)',
-    'linear-gradient(135deg,#EF4444,#B91C1C)',
-    'linear-gradient(135deg,#111827,#0B0F17)',
-    'linear-gradient(135deg,#3B82F6,#1D4ED8)',
-    'linear-gradient(135deg,#F59E0B,#B45309)',
-    'linear-gradient(135deg,#8B5CF6,#6D28D9)',
-    'linear-gradient(135deg,#EC4899,#BE185D)',
-    'linear-gradient(135deg,#14B8A6,#0F766E)',
-  ]
-  return palette[_id % palette.length]
-}
-
-const iconText = (title: string, _category: string) => {
-  if (title.includes('GitLab')) return { t: 'GL', bg: categoryColor('dev').bg }
-  if (title.includes('Bruno')) return { t: 'Br', bg: 'linear-gradient(135deg,#1E1B4B,#0F172A)' }
-  if (title.includes('Jenkins')) return { t: 'Jk', bg: 'linear-gradient(135deg,#F59E0B,#B45309)' }
-  if (title.includes('Sonar')) return { t: 'Sq', bg: 'linear-gradient(135deg,#34D399,#047857)' }
-  if (title.includes('Nexus')) return { t: 'Nx', bg: 'linear-gradient(135deg,#60A5FA,#1D4ED8)' }
-  if (title.includes('Sentry')) return { t: 'Se', bg: 'linear-gradient(135deg,#9C27B0,#360D3B)' }
-  if (title.includes('Mattermost')) return { t: 'Mm', bg: 'linear-gradient(135deg,#0058CC,#002D6E)' }
-  if (title.includes('Grafana') && title.includes('k6')) return { t: 'k6', bg: 'linear-gradient(135deg,#7B217F,#3C0D3D)' }
-  if (title.includes('Grafana') && title.includes('Beyla')) return { t: 'Gb', bg: 'linear-gradient(135deg,#10B981,#064E3B)' }
-  if (title.includes('Grafana') && title.includes('Tempo')) return { t: 'Gt', bg: 'linear-gradient(135deg,#F97316,#7C2D12)' }
-  if (title.includes('Grafana') && title.includes('Mimir')) return { t: 'Gm', bg: 'linear-gradient(135deg,#16A34A,#064E3B)' }
-  if (title.includes('Grafana')) return { t: 'Gf', bg: categoryColor('ops').bg }
-  if (title.includes('Kuber')) return { t: 'K8', bg: 'linear-gradient(135deg,#60A5FA,#2563EB)' }
-  if (title.includes('OpenTel') || title.includes('OTel')) return { t: 'OT', bg: 'linear-gradient(135deg,#000000,#1F2937)' }
-  if (title.includes('Jaeger')) return { t: 'Jg', bg: 'linear-gradient(135deg,#6366F1,#312E81)' }
-  if (title.includes('Loki')) return { t: 'Lk', bg: 'linear-gradient(135deg,#F59E0B,#7C2D12)' }
-  if (title.includes('Argo')) return { t: 'Ar', bg: 'linear-gradient(135deg,#6366F1,#4338CA)' }
-  if (title.includes('Nacos')) return { t: 'Na', bg: 'linear-gradient(135deg,#10B981,#065F46)' }
-  if (title.includes('Vault')) return { t: 'Va', bg: 'linear-gradient(135deg,#111827,#000000)' }
-  if (title.includes('Metabase')) return { t: 'Mb', bg: categoryColor('data').bg }
-  if (title.includes('Superset')) return { t: 'Ss', bg: 'linear-gradient(135deg,#14B8A6,#0F766E)' }
-  if (title.includes('Dolphin')) return { t: 'Ds', bg: 'linear-gradient(135deg,#F59E0B,#B45309)' }
-  if (title.includes('ClickHouse') || title.includes('Click')) return { t: 'CH', bg: 'linear-gradient(135deg,#FFCC00,#B45309)' }
-  if (title.includes('Doris')) return { t: 'Dr', bg: 'linear-gradient(135deg,#1E40AF,#002075)' }
-  if (title.includes('Flink')) return { t: 'Fk', bg: 'linear-gradient(135deg,#F59E0B,#B45309)' }
-  if (title.includes('Kylin')) return { t: 'Ky', bg: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' }
-  if (title.includes('dbt')) return { t: 'dt', bg: 'linear-gradient(135deg,#FF6B6B,#B91C1C)' }
-  if (title.includes('Airbyte')) return { t: 'Ab', bg: 'linear-gradient(135deg,#615EFC,#4338CA)' }
-  if (title.includes('SeaTunnel') || title.includes('Tunnel')) return { t: 'ST', bg: categoryColor('data').bg }
-  if (title.includes('DataX')) return { t: 'DX', bg: 'linear-gradient(135deg,#FF6A00,#B45309)' }
-  if (title.includes('Hue')) return { t: 'Hu', bg: categoryColor('data').bg }
-  if (title.includes('大模型') || title.includes('LLM') || title.includes('推理')) return { t: 'AI', bg: categoryColor('ai').bg }
-  if (title.includes('Midjour')) return { t: 'Mj', bg: categoryColor('ai').bg }
-  if (title.includes('Milvus')) return { t: 'Mv', bg: 'linear-gradient(135deg,#8B5CF6,#6D28D9)' }
-  if (title.includes('Ollama')) return { t: 'Ol', bg: 'linear-gradient(135deg,#000000,#1F2937)' }
-  if (title.includes('ComfyUI')) return { t: 'Cf', bg: 'linear-gradient(135deg,#F59E0B,#7C2D12)' }
-  if (title.includes('LangChain') || title.includes('Lang')) return { t: 'Lc', bg: 'linear-gradient(135deg,#1C3F39,#000000)' }
-  if (title.includes('Suno')) return { t: 'Sn', bg: 'linear-gradient(135deg,#000000,#7C2D12)' }
-  if (title.includes('Cursor')) return { t: 'Cr', bg: 'linear-gradient(135deg,#1E293B,#000000)' }
-  if (title.includes('Stable Diffusion') || title.includes('WebUI')) return { t: 'SD', bg: 'linear-gradient(135deg,#A855F7,#4C1D95)' }
-  if (title.includes('OCR')) return { t: 'OR', bg: 'linear-gradient(135deg,#22D3EE,#0891B2)' }
-  if (title.includes('ASR') || title.includes('Whisper')) return { t: 'SR', bg: 'linear-gradient(135deg,#8B5CF6,#6D28D9)' }
-  if (title.includes('Dify')) return { t: 'Df', bg: categoryColor('ai').bg }
-  if (title.includes('阿里')) return { t: '阿', bg: 'linear-gradient(135deg,#FB923C,#C2410C)' }
-  if (title.includes('腾讯')) return { t: '腾', bg: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' }
-  if (title.includes('华为')) return { t: '华', bg: 'linear-gradient(135deg,#EF4444,#991B1B)' }
-  if (title.includes('MinIO')) return { t: 'M', bg: 'linear-gradient(135deg,#EF4444,#B91C1C)' }
-  if (title.includes('Harbor')) return { t: 'H', bg: categoryColor('cloud').bg }
-  if (title.includes('DNS') || title.includes('域名')) return { t: 'NS', bg: 'linear-gradient(135deg,#10B981,#047857)' }
-  return {
-    t: title.slice(0, 2).toUpperCase().replace(/[^A-Z0-9\u4e00-\u9fa5]/g, '').slice(0, 2) || '◆',
-    bg: cardIdGradient(Number(title.length + title.charCodeAt(0))),
-  }
-}
-
-const simplifyTitle = (t: string): string => {
-  const exactMap: [RegExp, string][] = [
-    [/^GitLab\b/i, 'GitLab'], [/^Bruno\b/i, 'Bruno'], [/^Jenkins\b/i, 'Jenkins'],
-    [/SonarQube/i, 'SonarQube'], [/k6/i, 'k6'], [/Nexus/i, 'Nexus'],
-    [/Sentry/i, 'Sentry'], [/Mattermost/i, 'Mattermost'], [/Grafana\s*Beyla/i, 'Beyla'],
-    [/Grafana\s*Tempo/i, 'Tempo'], [/Grafana\s*Mimir/i, 'Mimir'], [/^Grafana\b/i, 'Grafana'],
-    [/Kubernetes/i, 'K8s'], [/OpenTelemetry/i, 'OpenTel'], [/Jaeger/i, 'Jaeger'],
-    [/^Loki\b/i, 'Loki'], [/^Vector\b/i, 'Vector'], [/Argo\s*CD/i, 'Argo CD'],
-    [/Nacos/i, 'Nacos'], [/Vault/i, 'Vault'], [/Metabase/i, 'Metabase'],
-    [/Superset/i, 'Superset'], [/DolphinScheduler/i, 'Dolphin'], [/ClickHouse/i, 'ClickHouse'],
-    [/Doris/i, 'Doris'], [/^Flink\b/i, 'Flink'], [/Kylin/i, 'Kylin'], [/^dbt\b/i, 'dbt'],
-    [/Airbyte/i, 'Airbyte'], [/SeaTunnel/i, 'SeaTunnel'], [/DataX/i, 'DataX'], [/^Hue\b/i, 'Hue'],
-    [/Midjourney/i, 'Midjourney'], [/Milvus/i, 'Milvus'], [/Ollama/i, 'Ollama'],
-    [/ComfyUI/i, 'ComfyUI'], [/LangChain/i, 'LangChain'], [/^Suno\b/i, 'Suno'],
-    [/^Cursor\b/i, 'Cursor'], [/Stable\s*Diffusion/i, 'SD WebUI'], [/Tesseract/i, 'Tesseract'],
-    [/Whisper/i, 'Whisper'], [/^Dify\b/i, 'Dify'], [/MinIO/i, 'MinIO'], [/Harbor/i, 'Harbor'],
-    [/^DNS\b/i, 'DNS'], [/大模型推理网关/i, 'LLM 网关'], [/阿里云控制台/i, '阿里云'],
-    [/腾讯云控制台/i, '腾讯云'], [/华为云控制台/i, '华为云'],
-  ]
-  for (const [re, val] of exactMap) if (re.test(t)) return val
-  const m = t.match(/^[A-Za-z][A-Za-z0-9.\-+_ ]{0,12}[A-Za-z0-9]?/)
-  return m ? m[0].trim() : t
-}
-
 export default function BottomTabBar({
   view, onViewChange, onMine, onShowTBD,
   search = '', onSearchChange, hideGlobalSearch = false,
-  searchPlaceholder = '搜索系统、名称、功能…',
+  searchPlaceholder = SEARCH_PLACEHOLDERS.generic,
   searchHints = [],
   spotlightApps = [],
   onOpenApp,
@@ -292,12 +181,16 @@ export default function BottomTabBar({
     setExpanded(false)
   }
 
+  const fallbackHints = searchHints.length > 0
+    ? searchHints.filter(k => !kw || k.toLowerCase().includes(kw))
+    : defaultSearchKeywords.filter(k => !kw || k.toLowerCase().includes(kw))
+
   return (
     <>
       {showSearchCapsule && !expanded && (
         <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}>
-          <div className="pointer-events-auto relative" style={{ width: '50vw', maxWidth: '50vw' }}>
+          <div className="pointer-events-auto relative" style={{ width: `${CAPSULE_WIDTH_VW}vw`, maxWidth: `${CAPSULE_WIDTH_VW}vw` }}>
             <div className="absolute left-0 top-0 h-full pl-3 flex items-center pointer-events-none" style={{ color: 'var(--t-text-sub)' }}>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -309,7 +202,7 @@ export default function BottomTabBar({
               value={search}
               onFocus={handleInputFocus}
               onChange={(e) => onSearchChange?.(e.target.value)}
-              placeholder="搜索"
+              placeholder={SEARCH_PLACEHOLDERS.capsule}
               className="w-full pl-10 pr-8 py-2.5 rounded-full border text-sm font-medium focus:outline-none focus:ring-2 transition-all appearance-none"
               style={{
                 backgroundColor: 'var(--t-header)',
@@ -353,7 +246,7 @@ export default function BottomTabBar({
                   color: 'var(--t-text-sub)',
                   backgroundColor: 'color-mix(in srgb, var(--t-accent-500) 10%, transparent)',
                 }}>
-                ★ 最佳搜索
+                {SPOTLIGHT_LABELS.bestSearch}
               </div>
             )}
             <div className="ml-auto">
@@ -374,12 +267,7 @@ export default function BottomTabBar({
             onClick={(e) => e.stopPropagation()}
           >
             <ul className="space-y-1.5 py-1">
-              {(searchHints.length > 0
-                ? searchHints.filter(k => !kw || k.toLowerCase().includes(kw))
-                : [
-                  'Jenkins 流水线', 'Grafana 监控', 'Kubernetes 集群', 'ClickHouse 分析', 'GitLab 仓库',
-                ].filter(k => !kw || k.toLowerCase().includes(kw))
-              ).map((hint) => (
+              {fallbackHints.map((hint) => (
                 <li key={hint}>
                   <button
                     onClick={() => { onSearchChange?.(hint); setExpanded(false) }}
@@ -405,12 +293,12 @@ export default function BottomTabBar({
                     <span className="w-1 h-3.5 rounded-full" aria-hidden
                       style={{ background: 'linear-gradient(180deg, var(--t-accent-400), var(--t-accent-600))' }} />
                     <h4 className="text-[13px] font-bold tracking-tight" style={{ color: 'var(--t-text-main)' }}>
-                      Sger 建议
+                      {SPOTLIGHT_LABELS.sgerSuggest}
                     </h4>
                   </div>
                 )}
                 <div className="grid grid-cols-4 gap-x-2 gap-y-3">
-                  {filteredSpotlight.slice(0, kw ? undefined : 8).map((card) => {
+                  {filteredSpotlight.slice(0, kw ? undefined : SPOTLIGHT_LIMIT).map((card) => {
                     const { t: iconChar, bg: iconBg } = iconText(card.title, card.category)
                     const label = simplifyTitle(card.title)
                     return (
@@ -531,9 +419,9 @@ export default function BottomTabBar({
             }}
           >
             <ul className="flex items-stretch justify-around py-1.5 px-2">
-              {TABS.map((tab) => {
+              {BOTTOM_TABS.map((tab) => {
                 const active = activeId === tab.id
-                const isTBD = tab.id === 'board'
+                const isTBD = !!tab.tbd
                 return (
                   <li key={tab.id} className="flex-1 flex justify-center">
                     <button
@@ -554,7 +442,7 @@ export default function BottomTabBar({
                           className="transition-transform"
                           style={{ transform: active ? 'translateY(-1px) scale(1.05)' : 'none' }}
                         >
-                          {tab.icon(active)}
+                          {TAB_ICONS[tab.id](active)}
                         </div>
                         {isTBD && (
                           <span
