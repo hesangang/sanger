@@ -180,6 +180,7 @@ export default function BottomTabBar({
   const inputRef = useRef<HTMLInputElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [viewportHeight, setViewportHeight] = useState<number | null>(null)
+  const showSearchCapsule = view !== 'mine' && !hideGlobalSearch
 
   const setExpanded = (v: boolean) => {
     setExpandedState(v)
@@ -213,10 +214,13 @@ export default function BottomTabBar({
   }, [])
 
   useEffect(() => {
-    if (expanded && scrollRef.current) {
+    if (expanded && inputRef.current) {
       const t = setTimeout(() => {
-        scrollRef.current!.scrollTop = scrollRef.current!.scrollHeight
-      }, 60)
+        inputRef.current?.focus()
+        if (scrollRef.current) {
+          scrollRef.current!.scrollTop = scrollRef.current!.scrollHeight
+        }
+      }, 30)
       return () => clearTimeout(t)
     }
   }, [expanded])
@@ -231,7 +235,6 @@ export default function BottomTabBar({
   const getActiveId = (): TabId => {
     if (view === 'mine') return 'mine'
     if (view === 'system') return 'apps'
-    // 移动端 APP：全量系统卡片（overview）属于「首页」，无论 overview/favorites/recent 都让首页高亮
     return 'console'
   }
   const activeId = getActiveId()
@@ -239,13 +242,10 @@ export default function BottomTabBar({
   const handleClick = (id: TabId) => {
     if (expanded) return
     if (id === 'console') {
-      // 首页 Tab → 直接显示全量系统卡片 overview（不再 favorites 空态）
       onViewChange('overview')
     } else if (id === 'apps') {
-      // 管理 Tab → 进入管理中心（与 PC 端一致）
       onViewChange('system')
     } else if (id === 'board') {
-      // 看板页 - 对应 PC 端「数据看板」，待开发 TBD
       onShowTBD?.('「数据看板」功能开发中，敬请期待')
     } else if (id === 'mine') {
       onMine ? onMine() : onViewChange('mine')
@@ -270,21 +270,80 @@ export default function BottomTabBar({
     ? Math.max(minHintArea, viewportHeight - searchBarEstimate - headerEstimate)
     : minHintArea
 
+  const handleInputFocus = () => {
+    if (!expanded) {
+      setExpanded(true)
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+        }
+      }, 60)
+    }
+  }
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onSearchChange?.('')
+    setTimeout(() => inputRef.current?.focus(), 0)
+  }
+
+  const handleCancel = () => {
+    onSearchChange?.('')
+    setExpanded(false)
+  }
+
   return (
     <>
-      <div
-        className="sm:hidden fixed inset-0 z-[60] flex flex-col"
-        style={{
-          backgroundColor: 'var(--t-bg)',
-          height: viewportHeight ? `${viewportHeight}px` : '100vh',
-          maxHeight: viewportHeight ? `${viewportHeight}px` : '100vh',
-          visibility: expanded ? 'visible' : 'hidden',
-          opacity: expanded ? 1 : 0,
-          transition: 'opacity 150ms ease-out',
-          pointerEvents: expanded ? 'auto' : 'none',
-        }}
-        onClick={() => setExpanded(false)}
-      >
+      {showSearchCapsule && !expanded && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}>
+          <div className="pointer-events-auto relative" style={{ width: '50vw', maxWidth: '50vw' }}>
+            <div className="absolute left-0 top-0 h-full pl-3 flex items-center pointer-events-none" style={{ color: 'var(--t-text-sub)' }}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              ref={inputRef}
+              type="text"
+              value={search}
+              onFocus={handleInputFocus}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              placeholder="搜索"
+              className="w-full pl-10 pr-8 py-2.5 rounded-full border text-sm font-medium focus:outline-none focus:ring-2 transition-all appearance-none"
+              style={{
+                backgroundColor: 'var(--t-header)',
+                borderColor: 'var(--t-border-sub)',
+                color: 'var(--t-text-main)',
+                boxShadow: '0 8px 32px -16px color-mix(in srgb, #000 60%, transparent)',
+                backdropFilter: 'saturate(150%) blur(12px)',
+                WebkitBackdropFilter: 'saturate(150%) blur(12px)',
+                // @ts-ignore
+                '--tw-ring-color': 'var(--t-accent-500)',
+              } as React.CSSProperties}
+              aria-label="打开搜索"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+            <div className="absolute right-0 top-0 h-full pr-4 flex items-center pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--t-accent-400)' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {expanded && (
+        <div
+          className="sm:hidden fixed inset-0 z-[60] flex flex-col"
+          style={{
+            backgroundColor: 'var(--t-bg)',
+            height: viewportHeight ? `${viewportHeight}px` : '100vh',
+            maxHeight: viewportHeight ? `${viewportHeight}px` : '100vh',
+          }}
+          onClick={() => setExpanded(false)}
+        >
           <div className="flex-shrink-0 px-4 pt-2 flex items-center justify-between"
             style={{ paddingTop: safeTop, minHeight: `${headerEstimate}px` }}
             onClick={(e) => e.stopPropagation()}>
@@ -299,7 +358,7 @@ export default function BottomTabBar({
             )}
             <div className="ml-auto">
               <button
-                onClick={() => { onSearchChange?.(''); setExpanded(false) }}
+                onClick={handleCancel}
                 className="text-sm font-semibold px-2.5 py-1.5 rounded-xl transition-colors flex-shrink-0"
                 style={{ color: 'var(--t-accent-500)' }}
               >
@@ -430,11 +489,7 @@ export default function BottomTabBar({
                 />
                 {search && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onSearchChange?.('')
-                      setTimeout(() => inputRef.current?.focus(), 0)
-                    }}
+                    onClick={handleClear}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center justify-center"
                     style={{ color: 'var(--t-text-mute)' }}
                     aria-label="清空"
@@ -457,50 +512,13 @@ export default function BottomTabBar({
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {!expanded && (
         <nav
           aria-label="底部导航"
           className="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex flex-col"
         >
-          {/* 小搜索框（点击放大）—— 仅在非「我的」视图 & 未进入管理功能子页时显示；宽度屏幕 1/2 居中 */}
-          {view !== 'mine' && !hideGlobalSearch && (
-            <div className="w-full flex justify-center pb-2">
-              <button
-                onClick={() => {
-                  setExpanded(true)
-                  inputRef.current?.focus()
-                  setTimeout(() => {
-                    if (scrollRef.current) {
-                      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-                    }
-                  }, 30)
-                }}
-                className="flex items-center gap-2.5 px-4 py-2.5 rounded-full border shadow-lg transition-all active:scale-[0.99]"
-                style={{
-                  width: '50vw',
-                  maxWidth: '50vw',
-                  backgroundColor: 'var(--t-header)',
-                  borderColor: 'var(--t-border-sub)',
-                  boxShadow: '0 8px 32px -16px color-mix(in srgb, #000 60%, transparent)',
-                  backdropFilter: 'saturate(150%) blur(12px)',
-                  WebkitBackdropFilter: 'saturate(150%) blur(12px)',
-                }}
-                aria-label="打开搜索"
-              >
-                <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--t-text-sub)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <span className="text-sm font-medium truncate" style={{ color: 'var(--t-text-mute)' }}>
-                  {search?.trim() || '搜索'}
-                </span>
-                <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--t-accent-400)' }} />
-              </button>
-            </div>
-          )}
-
-          {/* 底部 4 Tab 菜单栏 */}
           <div
             className="border-t"
             style={{

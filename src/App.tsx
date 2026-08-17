@@ -264,10 +264,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--t-bg)' }}>
-      <div
-        className={searchExpanded ? 'sm:block sm:contents' : 'contents'}
-        style={searchExpanded ? { display: 'none' } : undefined}
-      >
+      <div className={searchExpanded ? 'sm:contents hidden' : 'contents'}>
         <Header
           search={search}
           setSearch={setSearch}
@@ -281,8 +278,10 @@ export default function App() {
       </div>
 
       <main
-        className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-24 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-7"
-        style={searchExpanded ? { display: 'none' } : undefined}
+        className={
+          'flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-24 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-7 ' +
+          (searchExpanded ? 'sm:block hidden' : '')
+        }
       >
         {/* 我的面板 */}
         {view === 'mine' ? (
