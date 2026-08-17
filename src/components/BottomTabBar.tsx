@@ -206,13 +206,10 @@ export default function BottomTabBar({
   }, [])
 
   useEffect(() => {
-    if (expanded && inputRef.current) {
+    if (expanded && scrollRef.current) {
       const t = setTimeout(() => {
-        inputRef.current?.focus()
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-        }
-      }, 50)
+        scrollRef.current!.scrollTop = scrollRef.current!.scrollHeight
+      }, 60)
       return () => clearTimeout(t)
     }
   }, [expanded])
@@ -452,126 +449,130 @@ export default function BottomTabBar({
         </div>
       )}
 
-      <nav
-        aria-label="底部导航"
-        className="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex flex-col"
-      >
-        {/* 小搜索框（点击放大）—— 仅在非「我的」视图 & 未进入管理功能子页时显示；宽度屏幕 1/2 居中 */}
-        {view !== 'mine' && !hideGlobalSearch && (
-          <div className="w-full flex justify-center pb-2">
-            <button
-              onClick={() => {
-                setExpanded(true)
-                setTimeout(() => {
-                  inputRef.current?.focus()
-                }, 50)
-              }}
-              className="flex items-center gap-2.5 px-4 py-2.5 rounded-full border shadow-lg transition-all active:scale-[0.99]"
-              style={{
-                width: '50vw',
-                maxWidth: '50vw',
-                backgroundColor: 'var(--t-header)',
-                borderColor: 'var(--t-border-sub)',
-                boxShadow: '0 8px 32px -16px color-mix(in srgb, #000 60%, transparent)',
-                backdropFilter: 'saturate(150%) blur(12px)',
-                WebkitBackdropFilter: 'saturate(150%) blur(12px)',
-              }}
-              aria-label="打开搜索"
-            >
-              <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--t-text-sub)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span className="text-sm font-medium truncate" style={{ color: 'var(--t-text-mute)' }}>
-                {search?.trim() || '搜索'}
-              </span>
-              <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--t-accent-400)' }} />
-            </button>
-          </div>
-        )}
-
-        {/* 底部 4 Tab 菜单栏 */}
-        <div
-          className="border-t"
-          style={{
-            backgroundColor: 'var(--t-header)',
-            borderColor: 'var(--t-border-sub)',
-            boxShadow: '0 -4px 24px -16px color-mix(in srgb, #000 50%, transparent)',
-            backdropFilter: 'saturate(150%) blur(12px)',
-            WebkitBackdropFilter: 'saturate(150%) blur(12px)',
-            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          }}
+      {!expanded && (
+        <nav
+          aria-label="底部导航"
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex flex-col"
         >
-          <ul className="flex items-stretch justify-around py-1.5 px-2">
-            {TABS.map((tab) => {
-              const active = activeId === tab.id
-              const isTBD = tab.id === 'board'
-              return (
-                <li key={tab.id} className="flex-1 flex justify-center">
-                  <button
-                    onClick={() => handleClick(tab.id)}
-                    className="flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all w-full"
-                    style={{
-                      color: active ? 'var(--t-accent-500)' : 'var(--t-text-sub)',
-                      backgroundColor: active
-                        ? 'color-mix(in srgb, var(--t-accent-500) 8%, transparent)'
-                        : 'transparent',
-                      opacity: isTBD ? 0.75 : 1,
-                    }}
-                    aria-current={active ? 'page' : undefined}
-                    disabled={expanded}
-                  >
-                    <div className="relative">
-                      <div
-                        className="transition-transform"
-                        style={{ transform: active ? 'translateY(-1px) scale(1.05)' : 'none' }}
-                      >
-                        {tab.icon(active)}
+          {/* 小搜索框（点击放大）—— 仅在非「我的」视图 & 未进入管理功能子页时显示；宽度屏幕 1/2 居中 */}
+          {view !== 'mine' && !hideGlobalSearch && (
+            <div className="w-full flex justify-center pb-2">
+              <button
+                onClick={() => {
+                  setExpanded(true)
+                  requestAnimationFrame(() => {
+                    setTimeout(() => {
+                      inputRef.current?.focus()
+                    }, 0)
+                  })
+                }}
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-full border shadow-lg transition-all active:scale-[0.99]"
+                style={{
+                  width: '50vw',
+                  maxWidth: '50vw',
+                  backgroundColor: 'var(--t-header)',
+                  borderColor: 'var(--t-border-sub)',
+                  boxShadow: '0 8px 32px -16px color-mix(in srgb, #000 60%, transparent)',
+                  backdropFilter: 'saturate(150%) blur(12px)',
+                  WebkitBackdropFilter: 'saturate(150%) blur(12px)',
+                }}
+                aria-label="打开搜索"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--t-text-sub)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span className="text-sm font-medium truncate" style={{ color: 'var(--t-text-mute)' }}>
+                  {search?.trim() || '搜索'}
+                </span>
+                <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--t-accent-400)' }} />
+              </button>
+            </div>
+          )}
+
+          {/* 底部 4 Tab 菜单栏 */}
+          <div
+            className="border-t"
+            style={{
+              backgroundColor: 'var(--t-header)',
+              borderColor: 'var(--t-border-sub)',
+              boxShadow: '0 -4px 24px -16px color-mix(in srgb, #000 50%, transparent)',
+              backdropFilter: 'saturate(150%) blur(12px)',
+              WebkitBackdropFilter: 'saturate(150%) blur(12px)',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            }}
+          >
+            <ul className="flex items-stretch justify-around py-1.5 px-2">
+              {TABS.map((tab) => {
+                const active = activeId === tab.id
+                const isTBD = tab.id === 'board'
+                return (
+                  <li key={tab.id} className="flex-1 flex justify-center">
+                    <button
+                      onClick={() => handleClick(tab.id)}
+                      className="flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all w-full"
+                      style={{
+                        color: active ? 'var(--t-accent-500)' : 'var(--t-text-sub)',
+                        backgroundColor: active
+                          ? 'color-mix(in srgb, var(--t-accent-500) 8%, transparent)'
+                          : 'transparent',
+                        opacity: isTBD ? 0.75 : 1,
+                      }}
+                      aria-current={active ? 'page' : undefined}
+                      disabled={expanded}
+                    >
+                      <div className="relative">
+                        <div
+                          className="transition-transform"
+                          style={{ transform: active ? 'translateY(-1px) scale(1.05)' : 'none' }}
+                        >
+                          {tab.icon(active)}
+                        </div>
+                        {isTBD && (
+                          <span
+                            className="absolute -top-1 -right-3 text-[8px] font-bold px-1.5 py-0.5 rounded-md shadow-sm whitespace-nowrap"
+                            style={{
+                              background: 'linear-gradient(135deg, #F59E0B, #EA580C)',
+                              color: '#fff',
+                            }}
+                          >
+                            开发中
+                          </span>
+                        )}
                       </div>
+                      <span
+                        className="text-[11px] font-semibold leading-none mt-0.5 transition-all"
+                        style={{
+                          letterSpacing: active ? '0.02em' : '0',
+                          color: active ? 'var(--t-accent-600)' : 'var(--t-text-mute)',
+                        }}
+                      >
+                        {tab.label}
+                      </span>
                       {isTBD && (
                         <span
-                          className="absolute -top-1 -right-3 text-[8px] font-bold px-1.5 py-0.5 rounded-md shadow-sm whitespace-nowrap"
-                          style={{
-                            background: 'linear-gradient(135deg, #F59E0B, #EA580C)',
-                            color: '#fff',
-                          }}
+                          className="text-[9px] leading-none mt-0.5 font-semibold"
+                          style={{ color: 'var(--t-text-mute)' }}
                         >
-                          开发中
+                          TBD
                         </span>
                       )}
-                    </div>
-                    <span
-                      className="text-[11px] font-semibold leading-none mt-0.5 transition-all"
-                      style={{
-                        letterSpacing: active ? '0.02em' : '0',
-                        color: active ? 'var(--t-accent-600)' : 'var(--t-text-mute)',
-                      }}
-                    >
-                      {tab.label}
-                    </span>
-                    {isTBD && (
-                      <span
-                        className="text-[9px] leading-none mt-0.5 font-semibold"
-                        style={{ color: 'var(--t-text-mute)' }}
-                      >
-                        TBD
-                      </span>
-                    )}
-                    {active && (
-                      <span
-                        className="mt-1 w-5 h-1 rounded-full"
-                        style={{
-                          background: 'linear-gradient(90deg, var(--t-accent-400), var(--t-accent-600))',
-                        }}
-                        aria-hidden
-                      />
-                    )}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      </nav>
+                      {active && (
+                        <span
+                          className="mt-1 w-5 h-1 rounded-full"
+                          style={{
+                            background: 'linear-gradient(90deg, var(--t-accent-400), var(--t-accent-600))',
+                          }}
+                          aria-hidden
+                        />
+                      )}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </nav>
+      )}
     </>
   )
 }
