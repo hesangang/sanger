@@ -239,6 +239,28 @@ export default function App() {
     return names
   }, [isSystemHome, viewSource])
 
+  // Spotlight「最佳搜索 / Siri 建议」：4 列 × 2 行 = 8 个应用图标网格
+  // 首页视图：收藏优先 → 最近访问 → 当前视图全量补齐；管理主页：取 8 个管理入口占位（暂不支持快捷入口）
+  const spotlightApps = useMemo(() => {
+    if (isSystemHome) return [] as typeof allCards
+    const result: typeof allCards = []
+    const ids = new Set<number>()
+    const push = (c: (typeof allCards)[number] | undefined) => {
+      if (!c || ids.has(c.id)) return
+      ids.add(c.id); result.push(c)
+    }
+    favoriteCards.forEach(push)
+    recentCards.forEach(push)
+    for (const c of viewSource) push(c)
+    for (const c of allCards) push(c)
+    return result.slice(0, 8)
+  }, [isSystemHome, favoriteCards, recentCards, viewSource, allCards])
+
+  const handleOpenSpotlight = useCallback((card: PortalCard) => {
+    recordVisit(card.id)
+    window.open(card.url, '_blank', 'noopener,noreferrer')
+  }, [recordVisit])
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--t-bg)' }}>
       <Header
@@ -572,6 +594,8 @@ export default function App() {
         hideGlobalSearch={view === 'system' && !!systemSubView}
         searchPlaceholder={searchPlaceholder}
         searchHints={searchHints}
+        spotlightApps={spotlightApps}
+        onOpenApp={handleOpenSpotlight}
       />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>

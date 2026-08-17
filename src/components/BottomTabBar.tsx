@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import type { ViewMode } from '../App'
+import type { PortalCard } from '../data/portal'
 
 type TabId = 'console' | 'apps' | 'board' | 'mine'
 
@@ -13,6 +14,8 @@ interface BottomTabBarProps {
   hideGlobalSearch?: boolean
   searchPlaceholder?: string
   searchHints?: string[]
+  spotlightApps?: PortalCard[]
+  onOpenApp?: (card: PortalCard) => void
 }
 
 const TABS: {
@@ -58,23 +61,162 @@ const TABS: {
   },
 ]
 
+const categoryColor = (c: string): { bg: string; fg: string } => {
+  switch (c) {
+    case 'dev':    return { bg: 'linear-gradient(135deg,#38BDF8,#0284C7)', fg: '#0C4A6E' }
+    case 'ops':    return { bg: 'linear-gradient(135deg,#34D399,#047857)', fg: '#064E3B' }
+    case 'data':   return { bg: 'linear-gradient(135deg,#22D3EE,#0891B2)', fg: '#164E63' }
+    case 'ai':     return { bg: 'linear-gradient(135deg,#F472B6,#BE185D)', fg: '#831843' }
+    case 'cloud':  return { bg: 'linear-gradient(135deg,#818CF8,#4338CA)', fg: '#312E81' }
+    default:       return { bg: 'linear-gradient(135deg,#94A3B8,#475569)', fg: '#1E293B' }
+  }
+}
+
+const cardIdGradient = (_id: number) => {
+  const palette = [
+    'linear-gradient(135deg,#22C55E,#15803D)',
+    'linear-gradient(135deg,#EF4444,#B91C1C)',
+    'linear-gradient(135deg,#111827,#0B0F17)',
+    'linear-gradient(135deg,#3B82F6,#1D4ED8)',
+    'linear-gradient(135deg,#F59E0B,#B45309)',
+    'linear-gradient(135deg,#8B5CF6,#6D28D9)',
+    'linear-gradient(135deg,#EC4899,#BE185D)',
+    'linear-gradient(135deg,#14B8A6,#0F766E)',
+  ]
+  return palette[_id % palette.length]
+}
+
+const iconText = (title: string, _category: string) => {
+  if (title.includes('GitLab')) return { t: 'GL', bg: categoryColor('dev').bg }
+  if (title.includes('Bruno')) return { t: 'Br', bg: 'linear-gradient(135deg,#1E1B4B,#0F172A)' }
+  if (title.includes('Jenkins')) return { t: 'Jk', bg: 'linear-gradient(135deg,#F59E0B,#B45309)' }
+  if (title.includes('Sonar')) return { t: 'Sq', bg: 'linear-gradient(135deg,#34D399,#047857)' }
+  if (title.includes('Nexus')) return { t: 'Nx', bg: 'linear-gradient(135deg,#60A5FA,#1D4ED8)' }
+  if (title.includes('Sentry')) return { t: 'Se', bg: 'linear-gradient(135deg,#9C27B0,#360D3B)' }
+  if (title.includes('Mattermost')) return { t: 'Mm', bg: 'linear-gradient(135deg,#0058CC,#002D6E)' }
+  if (title.includes('Grafana') && title.includes('k6')) return { t: 'k6', bg: 'linear-gradient(135deg,#7B217F,#3C0D3D)' }
+  if (title.includes('Grafana') && title.includes('Beyla')) return { t: 'Gb', bg: 'linear-gradient(135deg,#10B981,#064E3B)' }
+  if (title.includes('Grafana') && title.includes('Tempo')) return { t: 'Gt', bg: 'linear-gradient(135deg,#F97316,#7C2D12)' }
+  if (title.includes('Grafana') && title.includes('Mimir')) return { t: 'Gm', bg: 'linear-gradient(135deg,#16A34A,#064E3B)' }
+  if (title.includes('Grafana')) return { t: 'Gf', bg: categoryColor('ops').bg }
+  if (title.includes('Kuber')) return { t: 'K8', bg: 'linear-gradient(135deg,#60A5FA,#2563EB)' }
+  if (title.includes('OpenTel') || title.includes('OTel')) return { t: 'OT', bg: 'linear-gradient(135deg,#000000,#1F2937)' }
+  if (title.includes('Jaeger')) return { t: 'Jg', bg: 'linear-gradient(135deg,#6366F1,#312E81)' }
+  if (title.includes('Loki')) return { t: 'Lk', bg: 'linear-gradient(135deg,#F59E0B,#7C2D12)' }
+  if (title.includes('Argo')) return { t: 'Ar', bg: 'linear-gradient(135deg,#6366F1,#4338CA)' }
+  if (title.includes('Nacos')) return { t: 'Na', bg: 'linear-gradient(135deg,#10B981,#065F46)' }
+  if (title.includes('Vault')) return { t: 'Va', bg: 'linear-gradient(135deg,#111827,#000000)' }
+  if (title.includes('Metabase')) return { t: 'Mb', bg: categoryColor('data').bg }
+  if (title.includes('Superset')) return { t: 'Ss', bg: 'linear-gradient(135deg,#14B8A6,#0F766E)' }
+  if (title.includes('Dolphin')) return { t: 'Ds', bg: 'linear-gradient(135deg,#F59E0B,#B45309)' }
+  if (title.includes('ClickHouse') || title.includes('Click')) return { t: 'CH', bg: 'linear-gradient(135deg,#FFCC00,#B45309)' }
+  if (title.includes('Doris')) return { t: 'Dr', bg: 'linear-gradient(135deg,#1E40AF,#002075)' }
+  if (title.includes('Flink')) return { t: 'Fk', bg: 'linear-gradient(135deg,#F59E0B,#B45309)' }
+  if (title.includes('Kylin')) return { t: 'Ky', bg: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' }
+  if (title.includes('dbt')) return { t: 'dt', bg: 'linear-gradient(135deg,#FF6B6B,#B91C1C)' }
+  if (title.includes('Airbyte')) return { t: 'Ab', bg: 'linear-gradient(135deg,#615EFC,#4338CA)' }
+  if (title.includes('SeaTunnel') || title.includes('Tunnel')) return { t: 'ST', bg: categoryColor('data').bg }
+  if (title.includes('DataX')) return { t: 'DX', bg: 'linear-gradient(135deg,#FF6A00,#B45309)' }
+  if (title.includes('Hue')) return { t: 'Hu', bg: categoryColor('data').bg }
+  if (title.includes('大模型') || title.includes('LLM') || title.includes('推理')) return { t: 'AI', bg: categoryColor('ai').bg }
+  if (title.includes('Midjour')) return { t: 'Mj', bg: categoryColor('ai').bg }
+  if (title.includes('Milvus')) return { t: 'Mv', bg: 'linear-gradient(135deg,#8B5CF6,#6D28D9)' }
+  if (title.includes('Ollama')) return { t: 'Ol', bg: 'linear-gradient(135deg,#000000,#1F2937)' }
+  if (title.includes('ComfyUI')) return { t: 'Cf', bg: 'linear-gradient(135deg,#F59E0B,#7C2D12)' }
+  if (title.includes('LangChain') || title.includes('Lang')) return { t: 'Lc', bg: 'linear-gradient(135deg,#1C3F39,#000000)' }
+  if (title.includes('Suno')) return { t: 'Sn', bg: 'linear-gradient(135deg,#000000,#7C2D12)' }
+  if (title.includes('Cursor')) return { t: 'Cr', bg: 'linear-gradient(135deg,#1E293B,#000000)' }
+  if (title.includes('Stable Diffusion') || title.includes('WebUI')) return { t: 'SD', bg: 'linear-gradient(135deg,#A855F7,#4C1D95)' }
+  if (title.includes('OCR')) return { t: 'OR', bg: 'linear-gradient(135deg,#22D3EE,#0891B2)' }
+  if (title.includes('ASR') || title.includes('Whisper')) return { t: 'SR', bg: 'linear-gradient(135deg,#8B5CF6,#6D28D9)' }
+  if (title.includes('Dify')) return { t: 'Df', bg: categoryColor('ai').bg }
+  if (title.includes('阿里')) return { t: '阿', bg: 'linear-gradient(135deg,#FB923C,#C2410C)' }
+  if (title.includes('腾讯')) return { t: '腾', bg: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' }
+  if (title.includes('华为')) return { t: '华', bg: 'linear-gradient(135deg,#EF4444,#991B1B)' }
+  if (title.includes('MinIO')) return { t: 'M', bg: 'linear-gradient(135deg,#EF4444,#B91C1C)' }
+  if (title.includes('Harbor')) return { t: 'H', bg: categoryColor('cloud').bg }
+  if (title.includes('DNS') || title.includes('域名')) return { t: 'NS', bg: 'linear-gradient(135deg,#10B981,#047857)' }
+  return {
+    t: title.slice(0, 2).toUpperCase().replace(/[^A-Z0-9\u4e00-\u9fa5]/g, '').slice(0, 2) || '◆',
+    bg: cardIdGradient(Number(title.length + title.charCodeAt(0))),
+  }
+}
+
+const simplifyTitle = (t: string): string => {
+  const exactMap: [RegExp, string][] = [
+    [/^GitLab\b/i, 'GitLab'], [/^Bruno\b/i, 'Bruno'], [/^Jenkins\b/i, 'Jenkins'],
+    [/SonarQube/i, 'SonarQube'], [/k6/i, 'k6'], [/Nexus/i, 'Nexus'],
+    [/Sentry/i, 'Sentry'], [/Mattermost/i, 'Mattermost'], [/Grafana\s*Beyla/i, 'Beyla'],
+    [/Grafana\s*Tempo/i, 'Tempo'], [/Grafana\s*Mimir/i, 'Mimir'], [/^Grafana\b/i, 'Grafana'],
+    [/Kubernetes/i, 'K8s'], [/OpenTelemetry/i, 'OpenTel'], [/Jaeger/i, 'Jaeger'],
+    [/^Loki\b/i, 'Loki'], [/^Vector\b/i, 'Vector'], [/Argo\s*CD/i, 'Argo CD'],
+    [/Nacos/i, 'Nacos'], [/Vault/i, 'Vault'], [/Metabase/i, 'Metabase'],
+    [/Superset/i, 'Superset'], [/DolphinScheduler/i, 'Dolphin'], [/ClickHouse/i, 'ClickHouse'],
+    [/Doris/i, 'Doris'], [/^Flink\b/i, 'Flink'], [/Kylin/i, 'Kylin'], [/^dbt\b/i, 'dbt'],
+    [/Airbyte/i, 'Airbyte'], [/SeaTunnel/i, 'SeaTunnel'], [/DataX/i, 'DataX'], [/^Hue\b/i, 'Hue'],
+    [/Midjourney/i, 'Midjourney'], [/Milvus/i, 'Milvus'], [/Ollama/i, 'Ollama'],
+    [/ComfyUI/i, 'ComfyUI'], [/LangChain/i, 'LangChain'], [/^Suno\b/i, 'Suno'],
+    [/^Cursor\b/i, 'Cursor'], [/Stable\s*Diffusion/i, 'SD WebUI'], [/Tesseract/i, 'Tesseract'],
+    [/Whisper/i, 'Whisper'], [/^Dify\b/i, 'Dify'], [/MinIO/i, 'MinIO'], [/Harbor/i, 'Harbor'],
+    [/^DNS\b/i, 'DNS'], [/大模型推理网关/i, 'LLM 网关'], [/阿里云控制台/i, '阿里云'],
+    [/腾讯云控制台/i, '腾讯云'], [/华为云控制台/i, '华为云'],
+  ]
+  for (const [re, val] of exactMap) if (re.test(t)) return val
+  const m = t.match(/^[A-Za-z][A-Za-z0-9.\-+_ ]{0,12}[A-Za-z0-9]?/)
+  return m ? m[0].trim() : t
+}
+
 export default function BottomTabBar({
   view, onViewChange, onMine, onShowTBD,
   search = '', onSearchChange, hideGlobalSearch = false,
   searchPlaceholder = '搜索系统、名称、功能…',
   searchHints = [],
+  spotlightApps = [],
+  onOpenApp,
 }: BottomTabBarProps) {
   const [expanded, setExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null)
 
-  // 展开/收起自动聚焦输入框
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setViewportHeight(window.visualViewport?.height ?? window.innerHeight)
+    const vv = window.visualViewport
+    const onResize = () => {
+      setViewportHeight(vv?.height ?? window.innerHeight)
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = 0
+        }
+      })
+    }
+    if (vv) {
+      vv.addEventListener('resize', onResize)
+      vv.addEventListener('scroll', onResize)
+    }
+    window.addEventListener('resize', onResize)
+    return () => {
+      if (vv) {
+        vv.removeEventListener('resize', onResize)
+        vv.removeEventListener('scroll', onResize)
+      }
+      window.removeEventListener('resize', onResize)
+    }
+  }, [])
+
   useEffect(() => {
     if (expanded && inputRef.current) {
-      inputRef.current.focus()
+      const t = setTimeout(() => {
+        inputRef.current?.focus()
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+        }
+      }, 50)
+      return () => clearTimeout(t)
     }
   }, [expanded])
 
-  // Esc 收起
   useEffect(() => {
     if (!expanded) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
@@ -106,36 +248,71 @@ export default function BottomTabBar({
     }
   }
 
+  const safeTop = 'env(safe-area-inset-top, 12px)'
+  const safeBottom = 'env(safe-area-inset-bottom, 0px)'
+  const searchBarEstimate = 72
+  const headerEstimate = 56
+  const minHintArea = 140
+
+  const kw = search.trim().toLowerCase()
+  const filteredSpotlight = (spotlightApps ?? []).filter(c =>
+    !kw ||
+    c.title.toLowerCase().includes(kw) ||
+    c.description.toLowerCase().includes(kw) ||
+    (c.tag ?? '').toLowerCase().includes(kw)
+  )
+
+  const layoutHintsMinHeight = viewportHeight
+    ? Math.max(minHintArea, viewportHeight - searchBarEstimate - headerEstimate)
+    : minHintArea
+
   return (
     <>
-      {/* iPhone 风格搜索：展开态 —— 推介内容（建议词列表）在上，可点击作为主内容；输入框贴底部，键盘弹起时自动把它顶到键盘上方 */}
       {expanded && (
         <div
           className="sm:hidden fixed inset-0 z-[60] flex flex-col"
-          style={{ backgroundColor: 'var(--t-bg)' }}
+          style={{
+            backgroundColor: 'var(--t-bg)',
+            height: viewportHeight ? `${viewportHeight}px` : '100vh',
+            maxHeight: viewportHeight ? `${viewportHeight}px` : '100vh',
+          }}
           onClick={() => setExpanded(false)}
         >
-          {/* 顶部：状态栏/安全区留白 + 取消按钮，避免刘海遮挡内容 */}
-          <div className="flex-shrink-0 px-4 pt-2 flex items-center justify-end"
-            style={{ paddingTop: 'env(safe-area-inset-top, 12px)', minHeight: '52px' }}
+          <div className="flex-shrink-0 px-4 pt-2 flex items-center justify-between"
+            style={{ paddingTop: safeTop, minHeight: `${headerEstimate}px` }}
             onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => { onSearchChange?.(''); setExpanded(false) }}
-              className="text-sm font-semibold px-2.5 py-1.5 rounded-xl transition-colors flex-shrink-0"
-              style={{ color: 'var(--t-accent-500)' }}
-            >
-              取消
-            </button>
+            {filteredSpotlight.length > 0 && !kw && (
+              <div className="text-[11px] font-semibold tracking-wide px-2.5 py-1 rounded-lg"
+                style={{
+                  color: 'var(--t-text-sub)',
+                  backgroundColor: 'color-mix(in srgb, var(--t-accent-500) 10%, transparent)',
+                }}>
+                ★ 最佳搜索
+              </div>
+            )}
+            <div className="ml-auto">
+              <button
+                onClick={() => { onSearchChange?.(''); setExpanded(false) }}
+                className="text-sm font-semibold px-2.5 py-1.5 rounded-xl transition-colors flex-shrink-0"
+                style={{ color: 'var(--t-accent-500)' }}
+              >
+                取消
+              </button>
+            </div>
           </div>
 
-          {/* 中部：搜索推介词（主内容），以列表形式作为可点击"背景"，占据全部上方空间 */}
-          <div className="flex-1 min-h-0 px-4 pt-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <ul className="space-y-1.5 pb-4">
+          <div
+            ref={scrollRef}
+            className="flex-1 min-h-0 px-4 overflow-y-auto flex flex-col justify-end"
+            style={{ minHeight: `${layoutHintsMinHeight}px` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ul className="space-y-1.5 py-1">
               {(searchHints.length > 0
-                ? searchHints.filter(k => !search.trim() || k.toLowerCase().includes(search.toLowerCase()))
+                ? searchHints.filter(k => !kw || k.toLowerCase().includes(kw))
                 : [
                   'Jenkins 流水线', 'Grafana 监控', 'Kubernetes 集群', 'ClickHouse 分析', 'GitLab 仓库',
-                ].filter(k => !search.trim() || k.toLowerCase().includes(search.toLowerCase()))
+                ].filter(k => !kw || k.toLowerCase().includes(kw))
               ).map((hint) => (
                 <li key={hint}>
                   <button
@@ -154,16 +331,68 @@ export default function BottomTabBar({
                 </li>
               ))}
             </ul>
+
+            {filteredSpotlight.length > 0 && (
+              <div className="mt-1 mb-2">
+                {!kw && (
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <span className="w-1 h-3.5 rounded-full" aria-hidden
+                      style={{ background: 'linear-gradient(180deg, var(--t-accent-400), var(--t-accent-600))' }} />
+                    <h4 className="text-[13px] font-bold tracking-tight" style={{ color: 'var(--t-text-main)' }}>
+                      Siri 建议
+                    </h4>
+                  </div>
+                )}
+                <div className="grid grid-cols-4 gap-x-2 gap-y-3">
+                  {filteredSpotlight.slice(0, kw ? undefined : 8).map((card) => {
+                    const { t: iconChar, bg: iconBg } = iconText(card.title, card.category)
+                    const label = simplifyTitle(card.title)
+                    return (
+                      <a
+                        key={card.id}
+                        href={card.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-col items-center gap-1 group"
+                        onClick={(e) => {
+                          if (onOpenApp) {
+                            e.preventDefault()
+                            onOpenApp(card)
+                            setExpanded(false)
+                          }
+                        }}
+                      >
+                        <div className="relative w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-white font-black transition-transform group-active:scale-95"
+                          style={{
+                            background: iconBg,
+                            fontSize: iconChar.length >= 3 ? '13px' : '18px',
+                            boxShadow: '0 6px 16px -10px color-mix(in srgb, #000 60%, transparent)',
+                          }}>
+                          <div className="absolute inset-0 opacity-25 pointer-events-none rounded-2xl" style={{
+                            background: 'radial-gradient(ellipse at 30% 18%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 55%)',
+                          }} />
+                          <span className="relative z-10 leading-none select-none"
+                            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{iconChar}</span>
+                        </div>
+                        <span className="text-[11px] font-medium leading-tight text-center line-clamp-1 truncate w-full"
+                          style={{ color: 'var(--t-text-main)', minHeight: '14px' }}
+                          title={card.title}>{label}</span>
+                      </a>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 底部：搜索输入框贴底，键盘弹起时自动被顶在键盘上方（iOS/Android 浏览器会压缩 fixed inset-0 的底部空间） */}
           <div className="flex-shrink-0 px-4 pt-2 pb-3"
             style={{
-              paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+              paddingBottom: `calc(12px + ${safeBottom})`,
               borderTop: '1px solid var(--t-border-sub)',
               backgroundColor: 'var(--t-bg)',
               backdropFilter: 'saturate(140%) blur(8px)',
               WebkitBackdropFilter: 'saturate(140%) blur(8px)',
+              minHeight: `${searchBarEstimate}px`,
             }}
             onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2">
@@ -187,6 +416,10 @@ export default function BottomTabBar({
                     '--tw-ring-color': 'var(--t-accent-500)',
                   } as React.CSSProperties}
                   aria-label="搜索"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                 />
               </div>
               <button

@@ -267,7 +267,7 @@ export default function MinePage({
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold" style={{ color: 'var(--t-text-main)' }}>关于 SanGer</p>
-            <p className="text-xs" style={{ color: 'var(--t-text-mute)' }}>企业级统一服务门户 · v1.0.0 · © 2026</p>
+            <p className="text-xs" style={{ color: 'var(--t-text-mute)' }}>服务中心 · v1.0.0 · © 2026</p>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-lg" style={{
             backgroundColor: 'color-mix(in srgb, var(--t-status-ok) 18%, transparent)',
