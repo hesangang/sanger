@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import type { Mode } from '../App'
 import type { ViewMode } from '../App'
-import type { AccentKey } from '../data/PortalCardItem'
-import { ACCENTS } from '../data/PortalCardItem'
+import type { AccentKey } from '../data/Portal'
+import { ACCENTS } from '../data/Portal'
 import {
   BRAND,
   CURRENT_USER,

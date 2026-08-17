@@ -1,4 +1,4 @@
-import type { UserItem } from './OrgManage'
+import type { UserItem } from './types'
 export type { UserItem }
 
 export const INITIAL_USERS: UserItem[] = [

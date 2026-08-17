@@ -1,5 +1,5 @@
-import type { AccentKey } from './PortalCardItem'
-import { ACCENTS } from './PortalCardItem'
+import type { AccentKey } from './Portal'
+import { ACCENTS } from './Portal'
 import type { BrandInfo, CurrentUser, MenuLink } from './Header'
 import { BRAND, CURRENT_USER, LOGOUT_MENU } from './Header'
 

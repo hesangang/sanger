@@ -1,4 +1,4 @@
-import type { RoleItem, ToastFn, MenuItem } from './OrgManage'
+import type { RoleItem, ToastFn, MenuItem } from './types'
 export type { RoleItem, ToastFn, MenuItem }
 
 export const INITIAL_ROLES: RoleItem[] = [

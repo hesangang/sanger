@@ -1,15 +1,12 @@
-import type { AccentKey } from '../data/MinePage'
-import { ACCENTS } from '../data/MinePage'
+import type { AccentKey } from '../data/Mine'
+import { ACCENTS } from '../data/Mine'
 import {
-  CURRENT_USER,
-  MINE_MESSAGE_CENTER,
-  MINE_THEME_ABOUT,
-  LOGOUT_MENU,
-} from '../data/MinePage'
+  CURRENT_USER, MINE_MESSAGE_CENTER, MINE_THEME_ABOUT, LOGOUT_MENU,
+} from '../data/Mine'
 
 type Mode = 'light' | 'dark'
 
-interface MinePageProps {
+interface MineProps {
   mode: Mode
   onToggleMode: () => void
   accent: AccentKey
@@ -54,12 +51,12 @@ const messageSvg = (icon: string) => {
   }
 }
 
-export default function MinePage({
+export default function Mine({
   mode,
   onToggleMode,
   accent,
   onChangeAccent,
-}: MinePageProps) {
+}: MineProps) {
   return (
     <div className="space-y-5">
       <section

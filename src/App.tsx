@@ -1,29 +1,29 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { regions, pickSpotlightCards, pickSearchHints } from './data/PortalCardItem'
-import type { PortalCard, AccentKey } from './data/PortalCardItem'
+import { regions, pickSpotlightCards, pickSearchHints } from './data/Portal'
+import type { PortalCard, AccentKey } from './data/Portal'
 import { getSearchPlaceholder, SPOTLIGHT_LIMIT, SEARCH_HINT_LIMIT } from './data/BottomTabBar'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import BottomTabBar from './components/BottomTabBar'
-import MinePage from './components/MinePage'
-import SystemPage from './components/SystemPage'
-import PortalCardItem from './components/PortalCardItem'
+import Mine from './components/Mine'
+import System from './components/System'
+import Portal from './components/Portal'
 import Toast, { type ToastItem } from './components/Toast'
 import { useFavorites } from './hooks/useFavorites'
 import { useRecentVisit } from './hooks/useRecentVisit'
 import {
   INITIAL_ORG, INITIAL_POSITIONS, INITIAL_USERS, INITIAL_MENUS, INITIAL_ROLES,
   SYSTEM_APP_CATEGORIES,
-} from './data/SystemPage'
+} from './data/System'
 import type {
-  OrgNode, Position, UserItem, MenuItem, RoleItem, SystemAppKey,
+  OrgNode, Position as PositionItem, UserItem, MenuItem, RoleItem, SystemAppKey,
   SystemAppCategory, SystemAppItem,
-} from './data/SystemPage'
-import OrgManage from './components/system/OrgManage'
-import PositionManage from './components/system/PositionManage'
-import UserManage from './components/system/UserManage'
-import MenuManage from './components/system/MenuManage'
-import RoleManage from './components/system/RoleManage'
+} from './data/System'
+import Org from './components/system/Org'
+import Position from './components/system/Position'
+import User from './components/system/User'
+import Menu from './components/system/Menu'
+import Role from './components/system/Role'
 
 export type Mode = 'light' | 'dark'
 export type ViewMode = 'overview' | 'favorites' | 'recent' | 'mine' | 'system'
@@ -69,7 +69,7 @@ export default function App() {
   const [systemSubView, setSystemSubView] = useState<SystemAppKey | null>(null)
   // APP 端系统模块共享状态
   const [sysOrgs, setSysOrgs] = useState<OrgNode[]>(INITIAL_ORG)
-  const [sysPositions, setSysPositions] = useState<Position[]>(INITIAL_POSITIONS)
+  const [sysPositions, setSysPositions] = useState<PositionItem[]>(INITIAL_POSITIONS)
   const [sysUsers, setSysUsers] = useState<UserItem[]>(INITIAL_USERS)
   const [sysMenus] = useState<MenuItem[]>(INITIAL_MENUS)
   const [sysRoles, setSysRoles] = useState<RoleItem[]>(INITIAL_ROLES)
@@ -203,7 +203,7 @@ export default function App() {
   }
 
   const renderCard = (card: PortalCard) => (
-    <PortalCardItem
+    <Portal
       key={card.id}
       card={card}
       isFavorite={isFavorite(card.id)}
@@ -265,7 +265,7 @@ export default function App() {
       >
         {/* 我的面板 */}
         {view === 'mine' ? (
-          <MinePage
+          <Mine
             mode={mode}
             onToggleMode={toggleMode}
             accent={accent}
@@ -273,9 +273,9 @@ export default function App() {
           />
         ) : view === 'system' ? (
           <>
-            {/* PC 端（sm+）：完整 SystemPage 左侧二级菜单布局 */}
+            {/* PC 端（sm+）：完整 System 左侧二级菜单布局 */}
             <div className="hidden md:block">
-              <SystemPage />
+              <System />
             </div>
             {/* APP 端（<md）：一级分类 + 二级图标网格；subView 非空时进入对应功能页 */}
             <div className="md:hidden">
@@ -362,11 +362,11 @@ export default function App() {
                       })()}</span>
                     </div>
                   </div>
-                  {systemSubView === 'org'      && <OrgManage     orgs={sysOrgs} setOrgs={setSysOrgs} positions={sysPositions} users={sysUsers} toast={pushToast} />}
-                  {systemSubView === 'position' && <PositionManage orgs={sysOrgs} positions={sysPositions} setPositions={setSysPositions} toast={pushToast} />}
-                  {systemSubView === 'user'     && <UserManage     orgs={sysOrgs} positions={sysPositions} users={sysUsers} setUsers={setSysUsers} toast={pushToast} />}
-                  {systemSubView === 'menu'     && <MenuManage     menus={sysMenus} setMenus={() => {}} toast={pushToast} />}
-                  {systemSubView === 'role'     && <RoleManage     roles={sysRoles} setRoles={setSysRoles} menus={sysMenus} toast={pushToast} />}
+                  {systemSubView === 'org'      && <Org          orgs={sysOrgs} setOrgs={setSysOrgs} positions={sysPositions} users={sysUsers} toast={pushToast} />}
+                  {systemSubView === 'position' && <Position orgs={sysOrgs} positions={sysPositions} setPositions={setSysPositions} toast={pushToast} />}
+                  {systemSubView === 'user'     && <User        orgs={sysOrgs} positions={sysPositions} users={sysUsers} setUsers={setSysUsers} toast={pushToast} />}
+                  {systemSubView === 'menu'     && <Menu         menus={sysMenus} setMenus={() => {}} toast={pushToast} />}
+                  {systemSubView === 'role'     && <Role         roles={sysRoles} setRoles={setSysRoles} menus={sysMenus} toast={pushToast} />}
                 </div>
               )}
             </div>

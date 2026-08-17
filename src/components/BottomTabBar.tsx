@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import type { ViewMode } from '../App'
-import type { PortalCard } from '../data/PortalCardItem'
+import type { PortalCard } from '../data/Portal'
 import {
   BOTTOM_TABS,
   SPOTLIGHT_LABELS,
@@ -13,7 +13,7 @@ import {
   iconText,
   simplifyTitle,
   defaultSearchKeywords,
-} from '../data/PortalCardItem'
+} from '../data/Portal'
 
 const stroke = (active: boolean) => (active ? 0 : 1.8)
 const fill = (active: boolean) => (active ? 'currentColor' : 'none')

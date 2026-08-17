@@ -1,20 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
-import type { PortalCard } from '../data/PortalCardItem'
+import type { PortalCard } from '../data/Portal'
 import {
-  categoryLabel,
-  categoryColor,
-  iconText,
-  simplifyTitle,
-} from '../data/PortalCardItem'
+  categoryLabel, categoryColor, iconText, simplifyTitle,
+} from '../data/Portal'
 
-interface PortalCardItemProps {
+interface PortalProps {
   card: PortalCard
   isFavorite?: boolean
   onToggleFavorite?: (id: number) => void
   onVisit?: (id: number) => void
 }
 
-export default function PortalCardItem({ card, isFavorite, onToggleFavorite, onVisit }: PortalCardItemProps) {
+export default function Portal({ card, isFavorite, onToggleFavorite, onVisit }: PortalProps) {
   const { t: iconChar, bg: iconBg } = iconText(card.title, card.category)
   const catName = categoryLabel(card.category)
   const catStyle = categoryColor(card.category)

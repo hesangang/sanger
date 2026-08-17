@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
-import type { OrgNode, Position, UserItem, ToastFn } from '../../data/system/OrgManage'
-import { getOrgById, genId } from '../../data/system/OrgManage'
-import { AVATAR_COLORS } from '../../data/system/UserManage'
-import { Field, Input, Modal } from './OrgManage'
+import type { OrgNode, Position, UserItem, ToastFn } from '../../data/system/types'
+import { getOrgById, genId } from '../../data/system/utils'
+import { AVATAR_COLORS } from '../../data/system/User'
+import { Field, Input, Modal } from './Org'
 
 interface Props {
   orgs: OrgNode[]

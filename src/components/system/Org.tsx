@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
-import type { OrgNode, Position, UserItem, ToastFn } from '../../data/system/OrgManage'
-import { getOrgById, getAllOrgsFlat, genId, TYPE_COLORS } from '../../data/system/OrgManage'
+import type { OrgNode, Position, UserItem, ToastFn } from '../../data/system/types'
+import { getOrgById, getAllOrgsFlat, genId } from '../../data/system/utils'
+import { TYPE_COLORS } from '../../data/system/Org'
 
 type OrgTab = 'tree' | 'list'
 

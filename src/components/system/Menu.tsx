@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import type { MenuItem, ToastFn } from '../../data/system/OrgManage'
-import { getMenuById, getAllMenusFlat, genId } from '../../data/system/MenuManage'
-import { MENU_TYPE_COLORS } from '../../data/system/MenuManage'
-import { Field, Input, Modal } from './OrgManage'
+import type { MenuItem, ToastFn } from '../../data/system/types'
+import { getMenuById, getAllMenusFlat, genId } from '../../data/system/utils'
+import { MENU_TYPE_COLORS } from '../../data/system/Menu'
+import { Field, Input, Modal } from './Org'
 
 interface Props {
   menus: MenuItem[]

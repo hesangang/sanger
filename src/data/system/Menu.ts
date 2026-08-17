@@ -1,22 +1,7 @@
-import type { MenuItem, SystemAppKey, SystemAppItem, SystemAppCategory, ContentKey, MobileSystemTab } from './OrgManage'
+import type {
+  MenuItem, SystemAppKey, SystemAppItem, SystemAppCategory, ContentKey, MobileSystemTab,
+} from './types'
 export type { MenuItem, SystemAppKey, SystemAppItem, SystemAppCategory, ContentKey, MobileSystemTab }
-import { genId as _genId } from './OrgManage'
-export const genId = _genId
-
-export function getMenuById(menus: MenuItem[], id: string): MenuItem | null {
-  for (const m of menus) {
-    if (m.id === id) return m
-    if (m.children) { const f = getMenuById(m.children, id); if (f) return f }
-  }
-  return null
-}
-
-export function getAllMenusFlat(menus: MenuItem[]): MenuItem[] {
-  const r: MenuItem[] = []
-  function walk(list: MenuItem[]) { for (const m of list) { r.push(m); if (m.children) walk(m.children) } }
-  walk(menus)
-  return r
-}
 
 export const INITIAL_MENUS: MenuItem[] = [
   { id: 'm1', code: 'M001', name: '首页', type: '菜单', parent: null, path: '/console', icon: '📊', sort: 1, status: '启用', perm: 'console:view', children: [] },

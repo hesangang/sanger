@@ -1,4 +1,4 @@
-import type { Position } from './OrgManage'
+import type { Position } from './types'
 export type { Position }
 
 export const INITIAL_POSITIONS: Position[] = [

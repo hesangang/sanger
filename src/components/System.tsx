@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
-import OrgManage from './system/OrgManage'
-import PositionManage from './system/PositionManage'
-import UserManage from './system/UserManage'
-import MenuManage from './system/MenuManage'
-import RoleManage from './system/RoleManage'
+import Org from './system/Org'
+import Position from './system/Position'
+import User from './system/User'
+import Menu from './system/Menu'
+import Role from './system/Role'
 import {
   INITIAL_ORG, INITIAL_POSITIONS, INITIAL_USERS, INITIAL_MENUS, INITIAL_ROLES,
   MENU_ID_TO_CONTENT,
@@ -12,8 +12,8 @@ import {
   INITIAL_DIR_EXPANDED,
   DEFAULT_ACTIVE_MENU,
   DEFAULT_CONTENT_KEY,
-} from '../data/SystemPage'
-import type { OrgNode, Position, UserItem, MenuItem, RoleItem, ContentKey } from '../data/SystemPage'
+} from '../data/System'
+import type { OrgNode, Position as PositionItem, UserItem, MenuItem, RoleItem, ContentKey } from '../data/System'
 
 function filterEnabledMenus(list: MenuItem[]): MenuItem[] {
   return list
@@ -21,12 +21,12 @@ function filterEnabledMenus(list: MenuItem[]): MenuItem[] {
     .map(m => ({ ...m, children: filterEnabledMenus(m.children) }))
 }
 
-export default function SystemPage() {
+export default function System() {
   const [contentKey, setContentKey] = useState<ContentKey>(DEFAULT_CONTENT_KEY)
   const [activeMenuId, setActiveMenuId] = useState<string>(DEFAULT_ACTIVE_MENU)
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set(INITIAL_DIR_EXPANDED))
   const [orgs, setOrgs] = useState<OrgNode[]>(INITIAL_ORG)
-  const [positions, setPositions] = useState<Position[]>(INITIAL_POSITIONS)
+  const [positions, setPositions] = useState<PositionItem[]>(INITIAL_POSITIONS)
   const [users, setUsers] = useState<UserItem[]>(INITIAL_USERS)
   const [menus] = useState<MenuItem[]>(() =>
     filterEnabledMenus(INITIAL_MENUS.filter(m => m.id !== 'm1')),
@@ -102,11 +102,11 @@ export default function SystemPage() {
         </div>
 
         <div className="flex-1 min-w-0 pb-24 md:pb-0">
-          {contentKey === 'org' && <OrgManage orgs={orgs} setOrgs={setOrgs} positions={positions} users={users} toast={toast} />}
-          {contentKey === 'position' && <PositionManage orgs={orgs} positions={positions} setPositions={setPositions} toast={toast} />}
-          {contentKey === 'user' && <UserManage orgs={orgs} positions={positions} users={users} setUsers={setUsers} toast={toast} />}
-          {contentKey === 'menu' && <MenuManage menus={INITIAL_MENUS} setMenus={() => {}} toast={toast} />}
-          {contentKey === 'role' && <RoleManage roles={roles} setRoles={setRoles} menus={INITIAL_MENUS} toast={toast} />}
+          {contentKey === 'org' && <Org orgs={orgs} setOrgs={setOrgs} positions={positions} users={users} toast={toast} />}
+          {contentKey === 'position' && <Position orgs={orgs} positions={positions} setPositions={setPositions} toast={toast} />}
+          {contentKey === 'user' && <User orgs={orgs} positions={positions} users={users} setUsers={setUsers} toast={toast} />}
+          {contentKey === 'menu' && <Menu menus={INITIAL_MENUS} setMenus={() => {}} toast={toast} />}
+          {contentKey === 'role' && <Role roles={roles} setRoles={setRoles} menus={INITIAL_MENUS} toast={toast} />}
         </div>
       </div>
 
