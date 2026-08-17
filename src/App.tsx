@@ -71,6 +71,7 @@ export default function App() {
   const [sysUsers, setSysUsers] = useState<UserItem[]>(INITIAL_USERS)
   const [sysMenus] = useState<MenuItem[]>(INITIAL_MENUS)
   const [sysRoles, setSysRoles] = useState<RoleItem[]>(INITIAL_ROLES)
+  const [searchExpanded, setSearchExpanded] = useState(false)
 
   const toggleRegion = (rid: string) =>
     setExpandedRegions(prev => ({ ...prev, [rid]: !prev[rid] }))
@@ -263,18 +264,26 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--t-bg)' }}>
-      <Header
-        search={search}
-        setSearch={setSearch}
-        mode={mode}
-        onToggleMode={toggleMode}
-        accent={accent}
-        onChangeAccent={setAccent}
-        onViewChange={handleViewChange}
-        view={view}
-      />
+      <div
+        className={searchExpanded ? 'sm:block sm:contents' : 'contents'}
+        style={searchExpanded ? { display: 'none' } : undefined}
+      >
+        <Header
+          search={search}
+          setSearch={setSearch}
+          mode={mode}
+          onToggleMode={toggleMode}
+          accent={accent}
+          onChangeAccent={setAccent}
+          onViewChange={handleViewChange}
+          view={view}
+        />
+      </div>
 
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-24 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-7">
+      <main
+        className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-24 sm:pt-4 sm:pb-6 lg:pt-5 lg:pb-7"
+        style={searchExpanded ? { display: 'none' } : undefined}
+      >
         {/* 我的面板 */}
         {view === 'mine' ? (
           <MinePage
@@ -596,6 +605,7 @@ export default function App() {
         searchHints={searchHints}
         spotlightApps={spotlightApps}
         onOpenApp={handleOpenSpotlight}
+        onExpandedChange={setSearchExpanded}
       />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>

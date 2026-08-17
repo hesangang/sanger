@@ -16,6 +16,7 @@ interface BottomTabBarProps {
   searchHints?: string[]
   spotlightApps?: PortalCard[]
   onOpenApp?: (card: PortalCard) => void
+  onExpandedChange?: (expanded: boolean) => void
 }
 
 const TABS: {
@@ -173,11 +174,17 @@ export default function BottomTabBar({
   searchHints = [],
   spotlightApps = [],
   onOpenApp,
+  onExpandedChange,
 }: BottomTabBarProps) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpandedState] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [viewportHeight, setViewportHeight] = useState<number | null>(null)
+
+  const setExpanded = (v: boolean) => {
+    setExpandedState(v)
+    onExpandedChange?.(v)
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -265,16 +272,19 @@ export default function BottomTabBar({
 
   return (
     <>
-      {expanded && (
-        <div
-          className="sm:hidden fixed inset-0 z-[60] flex flex-col"
-          style={{
-            backgroundColor: 'var(--t-bg)',
-            height: viewportHeight ? `${viewportHeight}px` : '100vh',
-            maxHeight: viewportHeight ? `${viewportHeight}px` : '100vh',
-          }}
-          onClick={() => setExpanded(false)}
-        >
+      <div
+        className="sm:hidden fixed inset-0 z-[60] flex flex-col"
+        style={{
+          backgroundColor: 'var(--t-bg)',
+          height: viewportHeight ? `${viewportHeight}px` : '100vh',
+          maxHeight: viewportHeight ? `${viewportHeight}px` : '100vh',
+          visibility: expanded ? 'visible' : 'hidden',
+          opacity: expanded ? 1 : 0,
+          transition: 'opacity 150ms ease-out',
+          pointerEvents: expanded ? 'auto' : 'none',
+        }}
+        onClick={() => setExpanded(false)}
+      >
           <div className="flex-shrink-0 px-4 pt-2 flex items-center justify-between"
             style={{ paddingTop: safeTop, minHeight: `${headerEstimate}px` }}
             onClick={(e) => e.stopPropagation()}>
@@ -447,7 +457,7 @@ export default function BottomTabBar({
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {!expanded && (
         <nav
@@ -460,11 +470,12 @@ export default function BottomTabBar({
               <button
                 onClick={() => {
                   setExpanded(true)
-                  requestAnimationFrame(() => {
-                    setTimeout(() => {
-                      inputRef.current?.focus()
-                    }, 0)
-                  })
+                  inputRef.current?.focus()
+                  setTimeout(() => {
+                    if (scrollRef.current) {
+                      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+                    }
+                  }, 30)
                 }}
                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-full border shadow-lg transition-all active:scale-[0.99]"
                 style={{
